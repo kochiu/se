@@ -1,0 +1,170 @@
+package com.sztx.se.common.util.session;
+
+import java.io.Serializable;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionContext;
+
+@SuppressWarnings("deprecation")
+public class CommonHttpSessionProxy implements HttpSession, Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7411463742758221896L;
+
+	/**
+	 * 创建时间，单位(毫秒)
+	 */
+	protected long creationTime = 0l;
+
+	protected String id;
+
+	/**
+	 * 最大间隔时间，单位(毫秒)
+	 */
+	protected int maxInactiveInterval;
+
+	/**
+	 * 上一次访问时间，单位(毫秒)
+	 */
+	protected long lastAccessedTime = 0l;
+
+	protected transient boolean expired = false;
+
+	protected transient boolean isNew = false;
+
+	protected transient boolean isDirty = false;
+
+	protected ConcurrentMap<String, Object> data = new ConcurrentHashMap<String, Object>();
+
+	@Override
+	public long getCreationTime() {
+		return this.creationTime;
+	}
+
+	@Override
+	public String getId() {
+		return this.id;
+	}
+
+	@Override
+	public long getLastAccessedTime() {
+		return this.lastAccessedTime;
+	}
+
+	public void setLastAccessedTime(long lastAccessedTime) {
+		this.lastAccessedTime = lastAccessedTime;
+	}
+
+	@Override
+	public ServletContext getServletContext() {
+		return null;
+	}
+
+	@Override
+	public void setMaxInactiveInterval(int maxInactiveInterval) {
+		this.maxInactiveInterval = maxInactiveInterval;
+	}
+
+	@Override
+	public int getMaxInactiveInterval() {
+		return this.maxInactiveInterval;
+	}
+
+	@Override
+	public HttpSessionContext getSessionContext() {
+		return null;
+	}
+
+	@Override
+	public Object getAttribute(String name) {
+		return this.data.get(name);
+	}
+
+	@Override
+	public Object getValue(String name) {
+		return getAttribute(name);
+	}
+
+	@Override
+	public Enumeration<String> getAttributeNames() {
+		final Iterator<String> localIterator = this.data.keySet().iterator();
+		return new Enumeration<String>() {
+			public boolean hasMoreElements() {
+				return localIterator.hasNext();
+			}
+
+			public String nextElement() {
+				return localIterator.next();
+			}
+		};
+	}
+
+	@Override
+	public String[] getValueNames() {
+		String[] arrayOfString = new String[this.data.size()];
+		return (String[]) this.data.keySet().toArray(arrayOfString);
+	}
+
+	@Override
+	public void setAttribute(String name, Object value) {
+		this.data.put(name, value);
+		this.isDirty = true;
+	}
+
+	@Override
+	public void putValue(String name, Object value) {
+		setAttribute(name, value);
+	}
+
+	@Override
+	public void removeAttribute(String name) {
+		this.data.remove(name);
+		this.isDirty = true;
+	}
+
+	@Override
+	public void removeValue(String name) {
+		removeAttribute(name);
+	}
+
+	@Override
+	public void invalidate() {
+		this.expired = true;
+		this.isDirty = true;
+	}
+
+	public boolean isExpired() {
+		return expired;
+	}
+
+	public boolean getExpired() {
+		return getLastAccessedTime() + getMaxInactiveInterval() <= System.currentTimeMillis();
+	}
+	
+	@Override
+	public boolean isNew() {
+		return this.isNew;
+	}
+
+	public boolean isDirty() {
+		return isDirty;
+	}
+
+	public ConcurrentMap<String, Object> getData() {
+		return data;
+	}
+
+	@Override
+	public String toString() {
+		return "HttpSessionProxy [creationTime=" + creationTime + ", id=" + id + ", maxInactiveInterval=" + maxInactiveInterval + ", lastAccessedTime="
+				+ lastAccessedTime + ", expired=" + expired + ", isNew=" + isNew + ", isDirty=" + isDirty + ", data=" + data + "]";
+	}
+
+}
