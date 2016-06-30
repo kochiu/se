@@ -34,11 +34,11 @@ import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
  */
 public class DynamicDataSource extends AbstractRoutingDataSource {
 
-	private static final String DDL_DB_CLASS = "DdlDbInterceptor";
+	private static final String DDL_DB_CLASS = "com.kochiu.se.dataaccess.mysql.ddl.interceptor.DdlDbInterceptor";
 
-	private static final String DDL_TABLE_CLASS = "DdlTableInterceptor";
+	private static final String DDL_TABLE_CLASS = "com.kochiu.se.dataaccess.mysql.ddl.interceptor.DdlTableInterceptor";
 
-	private static final String SQL_LOG_CLASS = "SqlLogInterceptor";
+	private static final String SQL_LOG_CLASS = "com.kochiu.se.dataaccess.mysql.source.interceptor.SqlLogInterceptor";
 
 	private static final String DEFAULT_DDL_FILE = "ddl-config.xml";
 
