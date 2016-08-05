@@ -64,7 +64,7 @@ public class HttpClientUtil {
 
 		try {
 			HttpGet httpGet = new HttpGet(url);
-			// Header header = new BasicHeader("Host", "www.kochiu.cn");
+			// Header header = new BasicHeader("Host", "www.sztx.com");
 			// httpGet.setHeader(header);
 			CloseableHttpResponse response = httpclient.execute(httpGet);
 

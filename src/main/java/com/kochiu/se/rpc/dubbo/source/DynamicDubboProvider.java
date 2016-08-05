@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.kochiu.se.rpc.dubbo.config.DubboConfigServer;
-import com.kochiu.se.rpc.dubbo.provider.DubboServiceFactory;
+import com.kochiu.se.rpc.dubbo.provider.DubboService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +15,7 @@ import com.alibaba.dubbo.config.ProtocolConfig;
 import com.alibaba.dubbo.config.RegistryConfig;
 import com.alibaba.dubbo.config.ServiceConfig;
 import com.kochiu.se.rpc.dubbo.extension.DubboExtensionLoader;
-import com.kochiu.se.rpc.dubbo.provider.DubboService;
+import com.kochiu.se.rpc.dubbo.provider.DubboServiceFactory;
 
 /**
  * 动态DubboProvider
@@ -113,6 +113,7 @@ public class DynamicDubboProvider {
 			service.setVersion(dubboService.getVersion());
 			service.setOwner(dubboService.getOwner());
 			service.setTimeout(dubboService.getTimeout());
+			service.setRetries(dubboService.getRetries());
 			service.setProxy(DubboServiceFactory.EXTENSION_NAME);
 			serviceConfigList.add(service);
 			startService(configServerKey, dubboService, service);

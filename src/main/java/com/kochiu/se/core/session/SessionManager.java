@@ -3,13 +3,13 @@ package com.kochiu.se.core.session;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.kochiu.se.core.session.persistence.SessionPersister;
+import com.kochiu.se.core.session.config.SessionConfig;
 import org.apache.commons.lang.StringUtils;
 
 import com.kochiu.se.common.util.session.HttpSessionProxy;
 import com.kochiu.se.common.util.session.SessionUtil;
-import com.kochiu.se.core.session.config.SessionConfig;
 import com.kochiu.se.core.session.context.SessionContext;
+import com.kochiu.se.core.session.persistence.SessionPersister;
 
 /**
  * 
@@ -23,7 +23,7 @@ public class SessionManager {
 	public void setSessionPersister(SessionPersister sessionPersister) {
 		this.sessionPersister = sessionPersister;
 	}
-
+	
 	/**
 	 * 获取session
 	 * 
@@ -129,7 +129,7 @@ public class SessionManager {
 	 * @return
 	 */
 	private HttpSessionProxy loadSession(String sessionId) {
-		HttpSessionProxy httpSessionProxy = getSessionFromRedis(sessionId);
+		HttpSessionProxy httpSessionProxy = getSessionFromPersister(sessionId);
 		return httpSessionProxy;
 	}
 
@@ -139,7 +139,7 @@ public class SessionManager {
 	 * @param key
 	 * @return
 	 */
-	private HttpSessionProxy getSessionFromRedis(final String key) {
+	private HttpSessionProxy getSessionFromPersister(final String key) {
 		return sessionPersister.getSessionFromCache(key);
 	}
 

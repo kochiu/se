@@ -2,11 +2,10 @@ package com.kochiu.se.dataaccess.fastdfs.impl;
 
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.kochiu.se.dataaccess.fastdfs.BaseFastdfsDAO;
 import com.kochiu.se.dataaccess.fastdfs.config.FileInfo;
 import com.kochiu.se.dataaccess.fastdfs.source.DynamicFastdfsSource;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public abstract class BaseFastdfsDAOImpl implements BaseFastdfsDAO {
 

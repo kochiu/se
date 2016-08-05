@@ -1,7 +1,8 @@
 package com.kochiu.se.dataaccess.mongo.config;
 
-import com.kochiu.se.common.exception.SystemException;
 import org.apache.commons.lang.StringUtils;
+
+import com.kochiu.se.common.exception.SystemException;
 
 /**
  * mongo排序对象

@@ -1,5 +1,6 @@
 package com.kochiu.se.core.quartz.job;
 
+import com.kochiu.se.common.exception.SystemException;
 import com.kochiu.se.core.quartz.config.QuartzParameter;
 import org.quartz.Job;
 import org.quartz.JobDetail;
@@ -14,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.kochiu.se.common.domain.ContextConstants;
-import com.kochiu.se.common.exception.SystemException;
 import com.kochiu.se.common.util.date.DateUtil;
 import com.kochiu.se.core.quartz.component.QuartzManager;
 
@@ -29,11 +29,17 @@ public abstract class BaseJob implements Job {
 	protected static final Logger log = LoggerFactory.getLogger(BaseJob.class);
 
 	private static boolean openLog;
-	
+
+	private static int logLength;
+
 	public static void setOpenLog(boolean openLog) {
 		BaseJob.openLog = openLog;
 	}
-	
+
+	public static void setLogLength(int logLength) {
+		BaseJob.logLength = logLength;
+	}
+
 	/**
 	 * job具体的业务逻辑
 	 * 
@@ -66,9 +72,10 @@ public abstract class BaseJob implements Job {
 				endTime = (endTime == 0 ? System.currentTimeMillis() : endTime);
 				// 打印日志
 				String quartzLog = getQuartzLog(quartzParameter, jobResult, startTime, endTime);
+				int logLength = BaseJob.logLength != 0 ? BaseJob.logLength : ContextConstants.LOG_MAX_LENGTH;
 
-				if (quartzLog.length() > ContextConstants.LOG_MAX_LENGTH) {
-					quartzLog = quartzLog.substring(0, ContextConstants.LOG_MAX_LENGTH);
+				if (logLength != -1 && quartzLog.length() > logLength) {
+					quartzLog = quartzLog.substring(0, logLength);
 				}
 
 				log.info(quartzLog);

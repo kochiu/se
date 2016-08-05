@@ -11,8 +11,8 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.kochiu.se.core.service.InitializeService;
 import com.kochiu.se.web.context.WebContext;
+import com.kochiu.se.core.service.InitializeService;
 
 /**
  * 将request和response注册到WebContext中，结束时清除
@@ -25,12 +25,12 @@ public class WebContextFilter implements Filter {
 	public void destroy() {
 	}
 
-	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+	public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
 		try {
 			HttpServletRequest heq = (HttpServletRequest) request;
 			HttpServletResponse hsr = (HttpServletResponse) response;
 			WebContext.registry(heq, hsr);
-			chain.doFilter(request, response);
+			filterChain.doFilter(request, response);
 		} finally {
 			WebContext.release();
 			InitializeService.clearDynamicSources();

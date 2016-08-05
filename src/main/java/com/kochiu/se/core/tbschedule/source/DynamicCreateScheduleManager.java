@@ -6,11 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.kochiu.se.core.context.SpringContextHolder;
-import com.kochiu.se.core.tbschedule.config.ScheduleConfigServer;
-import com.kochiu.se.core.tbschedule.task.InitialTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.kochiu.se.core.context.SpringContextHolder;
+import com.kochiu.se.core.tbschedule.config.ScheduleConfigServer;
 
 /**
  * 
@@ -23,16 +23,10 @@ public class DynamicCreateScheduleManager {
 	
 	private List<ScheduleConfigServer> scheduleConfigServerList;
 
-	private List<InitialTask> initialTaskList;
-
 	private DynamicSchedule dynamicSchedule;
 
 	public void setScheduleConfigServerList(List<ScheduleConfigServer> scheduleConfigServerList) {
 		this.scheduleConfigServerList = scheduleConfigServerList;
-	}
-
-	public void setInitialTaskList(List<InitialTask> initialTaskList) {
-		this.initialTaskList = initialTaskList;
 	}
 
 	public void setDynamicSchedule(DynamicSchedule dynamicSchedule) {
@@ -46,20 +40,7 @@ public class DynamicCreateScheduleManager {
 	private void registerSchedule() {
 		Map<String, ScheduleConfigServer> targetScheduleConfigServerMap = new HashMap<String, ScheduleConfigServer>();
 		List<ScheduleConfigServer> scheduleConfigServerList = new ArrayList<ScheduleConfigServer>();
-		List<InitialTask> initialTaskList = new ArrayList<InitialTask>();
 		ScheduleConfigServer defaultScheduleConfigServer = null;
-
-		if (this.initialTaskList == null || this.initialTaskList.isEmpty()) {
-			Map<String, InitialTask> initialTaskMap = SpringContextHolder.applicationContext.getBeansOfType(InitialTask.class);
-
-			if (initialTaskMap != null && !initialTaskMap.isEmpty()) {
-				for (Entry<String, InitialTask> en : initialTaskMap.entrySet()) {
-					initialTaskList.add(en.getValue());
-				}
-			}
-		} else {
-			initialTaskList = this.initialTaskList;
-		}
 		
 		if (this.scheduleConfigServerList == null || this.scheduleConfigServerList.isEmpty()) {
 			Map<String, ScheduleConfigServer> scheduleConfigServerMap = SpringContextHolder.applicationContext.getBeansOfType(ScheduleConfigServer.class);
@@ -85,7 +66,7 @@ public class DynamicCreateScheduleManager {
 
 		dynamicSchedule.setTargetScheduleConfigServerMap(targetScheduleConfigServerMap);
 		dynamicSchedule.setDefaultTargetScheduleSource(defaultScheduleConfigServer);
-		dynamicSchedule.setInitialTaskList(initialTaskList);
+		dynamicSchedule.initTbScheduleLog();
 		
 		try {
 			dynamicSchedule.afterPropertiesSet();

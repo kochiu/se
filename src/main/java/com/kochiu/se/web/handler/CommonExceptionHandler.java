@@ -4,15 +4,17 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.kochiu.se.common.domain.Result;
+import com.kochiu.se.common.domain.ResultCode;
 import com.kochiu.se.common.exception.BusinessException;
+import com.kochiu.se.common.exception.ExceptionMessager;
+import com.kochiu.se.common.exception.SystemException;
 import com.kochiu.se.common.util.http.URLUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.ModelAndView;
 
-import com.kochiu.se.common.domain.ResultCode;
-import com.kochiu.se.common.exception.SystemException;
+import com.kochiu.se.web.filter.EncryptFilter;
 
 /**
  * 统一异常处理器
@@ -34,28 +36,49 @@ public class CommonExceptionHandler implements HandlerExceptionResolver {
 
 		if (BusinessException.class.isAssignableFrom(ex.getClass())) {
 			BusinessException bex = (BusinessException) ex;
-			// 业务异常返回给页面提示
-			result = new Result(ResultCode.COMMON_BUSINESS_EXCEPTION, false);
-			result.setDescription(bex.getMessage());
+			// 业务异常
+			if (bex.getCode() != null) {
+				result = new Result(bex.getCode(), bex.getDescription(), false);
+			} else {
+				result = new Result(ResultCode.COMMON_BUSINESS_EXCEPTION, false);
+			}
+			
+			result.setDescription(ExceptionMessager.getExceptionMessage(bex));
 			result.setResultMap(bex.getResultMap());
 		} else if (ex.getClass().isInstance(new BusinessException())) {
-			String message = getMessage(ex);
-			BusinessException bex = new BusinessException(message, ex);
-			// 业务异常返回给页面提示
-			result = new Result(ResultCode.COMMON_BUSINESS_EXCEPTION, false);
-			result.setDescription(bex.getMessage());
+			BusinessException bex = new BusinessException(ex);
+			// 业务异常
+			if (bex.getCode() != null) {
+				result = new Result(bex.getCode(), bex.getDescription(), false);
+			} else {
+				result = new Result(ResultCode.COMMON_BUSINESS_EXCEPTION, false);
+			}
+			
+			result.setDescription(ExceptionMessager.getExceptionMessage(bex));
+			result.setResultMap(bex.getResultMap());
 		} else if (SystemException.class.isAssignableFrom(ex.getClass())) {
 			SystemException sex = (SystemException) ex;
 			// 系统异常
-			result = new Result(ResultCode.COMMON_SYSTEM_EXCEPTION, false);
-			result.setDescription(sex.getMessage());
+			if (sex.getCode() != null) {
+				result = new Result(sex.getCode(), sex.getDescription(), false);
+			} else {
+				result = new Result(ResultCode.COMMON_SYSTEM_EXCEPTION, false);
+			}
+
+			result.setDescription(ExceptionMessager.getExceptionMessage(sex));
+			result.setResultMap(sex.getResultMap());
 			log.error("CommonExceptionHandler catche the System Exception, ", ex);
 		} else if (ex.getClass().isInstance(new SystemException())) {
-			String message = getMessage(ex);
-			SystemException sex = new SystemException(message, ex);
+			SystemException sex = new SystemException(ex);
 			// 系统异常
-			result = new Result(ResultCode.COMMON_SYSTEM_EXCEPTION, false);
-			result.setDescription(sex.getMessage());
+			if (sex.getCode() != null) {
+				result = new Result(sex.getCode(), sex.getDescription(), false);
+			} else {
+				result = new Result(ResultCode.COMMON_SYSTEM_EXCEPTION, false);
+			}
+			
+			result.setDescription(ExceptionMessager.getExceptionMessage(sex));
+			result.setResultMap(sex.getResultMap());
 			log.error("CommonExceptionHandler catche the System Exception, ", ex);
 		} else {
 			// 系统错误
@@ -83,6 +106,7 @@ public class CommonExceptionHandler implements HandlerExceptionResolver {
 				}
 				
 				request.setAttribute("result", result);
+				request.setAttribute(EncryptFilter.ENCRPY_HEADER, true);
 				String responseStr = responseSb.toString();
 				response.getWriter().write(responseStr);
 			} catch (Exception e) {
@@ -97,26 +121,4 @@ public class CommonExceptionHandler implements HandlerExceptionResolver {
 		}
 	}
 	
-	private String getMessage(Exception ex) {
-		String message = ex.getMessage();
-		int index1 = message.indexOf("\n");
-		
-		if (index1 != -1) {
-			message = message.substring(0, index1);
-		}
-		
-		int index2 = message.indexOf("\r");
-		
-		if (index2 != -1) {
-			message = message.substring(0, index2);
-		}
-		
-		int index3 = message.indexOf(":");
-		
-		if (index3 != -1) {
-			message = message.substring(index3 + 1).trim();
-		}
-		
-		return message;
-	}
 }

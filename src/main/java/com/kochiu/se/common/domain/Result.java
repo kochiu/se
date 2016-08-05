@@ -58,12 +58,13 @@ public class Result implements Serializable {
 
 	}
 
-	public Result(ResultCode resultCode) {
-		this.code = resultCode.getCode();
-		this.description = resultCode.getDescription();
+	public Result(String code, String description, boolean isSuccess) {
+		this.code = code;
+		this.description = description;
+		this.isSuccess = isSuccess;
 	}
 
-	public Result(ResultCode resultCode, boolean isSuccess) {
+	public Result(ResultCodeEnum resultCode, boolean isSuccess) {
 		this.code = resultCode.getCode();
 		this.description = resultCode.getDescription();
 		this.isSuccess = isSuccess;
@@ -143,7 +144,7 @@ public class Result implements Serializable {
 		this.resultMap.clear();
 	}
 
-	public void setCode(ResultCode resultCode) {
+	public void setCode(ResultCodeEnum resultCode) {
 		setCode(resultCode.getCode());
 		setDescription(resultCode.getDescription());
 	}

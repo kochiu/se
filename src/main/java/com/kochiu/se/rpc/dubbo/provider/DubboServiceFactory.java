@@ -1,5 +1,7 @@
 package com.kochiu.se.rpc.dubbo.provider;
 
+import java.lang.reflect.InvocationTargetException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,14 +22,20 @@ public class DubboServiceFactory extends AbstractProxyFactory {
 
 	public static final String EXTENSION_NAME = "javassist";
 
-	private static final Logger logger = LoggerFactory.getLogger(DubboServiceFactory.class);
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	private static boolean openLog;
-	
+
+	private static int logLength;
+
 	public static void setOpenLog(boolean openLog) {
 		DubboServiceFactory.openLog = openLog;
 	}
-	
+
+	public static void setLogLength(int logLength) {
+		DubboServiceFactory.logLength = logLength;
+	}
+
 	@SuppressWarnings("unchecked")
 	public <T> T getProxy(Invoker<T> invoker, Class<?>[] interfaces) {
 		return (T) Proxy.getProxy(interfaces).newInstance(new InvokerInvocationHandler(invoker));
@@ -43,12 +51,20 @@ public class DubboServiceFactory extends AbstractProxyFactory {
 					long startTime = System.currentTimeMillis();
 					long endTime = 0;
 					Object obj = null;
+					String className = this.getInterface().getCanonicalName();
 
 					try {
 						obj = wrapper.invokeMethod(proxy, methodName, parameterTypes, arguments);
 						return obj;
 					} catch (Throwable t) {
-						obj = t.getClass().getCanonicalName() + ":" + t.getMessage();
+						if (t instanceof InvocationTargetException) {
+							InvocationTargetException ite = (InvocationTargetException) t;
+							Throwable e = ite.getTargetException();
+							obj = e.getClass().getCanonicalName() + ":" + e.getMessage();
+						} else {
+							obj = t.getClass().getCanonicalName() + ":" + t.getMessage();
+						}
+						
 						throw t;
 					} finally {
 						try {
@@ -67,10 +83,11 @@ public class DubboServiceFactory extends AbstractProxyFactory {
 
 							endTime = (endTime == 0 ? System.currentTimeMillis() : endTime);
 							// 打印日志
-							String rpcLog = getRpcLog(proxy, methodName, inputParams, rspResult, startTime, endTime);
+							String rpcLog = getRpcLog(className, methodName, inputParams, rspResult, startTime, endTime);
+							int logLength = DubboServiceFactory.logLength != 0 ? DubboServiceFactory.logLength : ContextConstants.LOG_MAX_LENGTH;
 
-							if (rpcLog.length() > ContextConstants.LOG_MAX_LENGTH) {
-								rpcLog = rpcLog.substring(0, ContextConstants.LOG_MAX_LENGTH);
+							if (logLength != -1 && rpcLog.length() > logLength) {
+								rpcLog = rpcLog.substring(0, logLength);
 							}
 
 							logger.info(rpcLog);
@@ -83,14 +100,13 @@ public class DubboServiceFactory extends AbstractProxyFactory {
 				}
 			}
 
-			private String getRpcLog(T proxy, String methodName, String inputParams, String rspResult, long startTime, long endTime) {
+			private String getRpcLog(String className, String methodName, String inputParams, String rspResult, long startTime, long endTime) {
 				String localAddress = RpcContext.getContext().getLocalAddressString();
 				String remoteAddress = RpcContext.getContext().getRemoteAddressString();
 				long cost = endTime - startTime;
 				String startTimeStr = DateUtil.formatDate(startTime, DateUtil.MAX_LONG_DATE_FORMAT_STR);
 				String endTimeStr = DateUtil.formatDate(endTime, DateUtil.MAX_LONG_DATE_FORMAT_STR);
-				return String.format("[Provider] %s -> %s - %s|%s|IN:%s|OUT:%s|[start:%s, end:%s, cost:%dms]", remoteAddress, localAddress, proxy.getClass()
-						.getCanonicalName(), methodName, inputParams, rspResult, startTimeStr, endTimeStr, cost);
+				return String.format("[Provider] %s -> %s - %s|%s|IN:%s|OUT:%s|[start:%s, end:%s, cost:%dms]", remoteAddress, localAddress, className, methodName, inputParams, rspResult, startTimeStr, endTimeStr, cost);
 			}
 		};
 	}

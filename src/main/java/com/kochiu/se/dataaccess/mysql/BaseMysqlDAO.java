@@ -5,9 +5,10 @@ package com.kochiu.se.dataaccess.mysql;
 
 import java.util.List;
 
+import org.apache.ibatis.annotations.Param;
+
 import com.kochiu.se.dataaccess.mysql.config.FilterRule;
 import com.kochiu.se.dataaccess.mysql.config.PageQuery;
-import org.apache.ibatis.annotations.Param;
 
 /**
  * 

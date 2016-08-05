@@ -2,9 +2,8 @@ package com.kochiu.se.dataaccess.memcache.callback;
 
 import java.util.concurrent.TimeoutException;
 
-import net.rubyeye.xmemcached.exception.MemcachedException;
-
 import com.kochiu.se.dataaccess.memcache.client.XMemcachedClientProxy;
+import net.rubyeye.xmemcached.exception.MemcachedException;
 
 public interface MemcacheCallback<T> {
 

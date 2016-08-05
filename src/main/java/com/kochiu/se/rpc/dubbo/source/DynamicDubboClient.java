@@ -4,18 +4,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.kochiu.se.common.exception.SystemException;
-import com.kochiu.se.rpc.dubbo.client.DubboClient;
-import com.kochiu.se.rpc.dubbo.client.DubboClientFactory;
-import com.kochiu.se.rpc.dubbo.client.DubboClientFilter;
 import com.kochiu.se.rpc.dubbo.config.DubboConfigServer;
-import com.kochiu.se.rpc.dubbo.extension.DubboExtensionLoader;
-import com.kochiu.se.rpc.dubbo.provider.DubboServiceFactory;
 import org.apache.commons.lang.StringUtils;
 
 import com.alibaba.dubbo.config.ApplicationConfig;
 import com.alibaba.dubbo.config.ReferenceConfig;
 import com.alibaba.dubbo.config.RegistryConfig;
+import com.kochiu.se.common.exception.SystemException;
+import com.kochiu.se.rpc.dubbo.client.DubboClient;
+import com.kochiu.se.rpc.dubbo.client.DubboClientFactory;
+import com.kochiu.se.rpc.dubbo.client.DubboClientFilter;
+import com.kochiu.se.rpc.dubbo.extension.DubboExtensionLoader;
+import com.kochiu.se.rpc.dubbo.provider.DubboServiceFactory;
 
 /**
  * 动态dubbo客户端
@@ -36,6 +36,11 @@ public class DynamicDubboClient implements DubboClientFactory {
 	 */
 	private boolean openLog;
 
+	/**
+	 * 日志最大长度，如果不传则默认1000，传-1则不限制日志打印长度
+	 */
+	private int logLength;
+
 	public void setDefaultTargetDubboConfigServer(DubboConfigServer defaultTargetDubboConfigServer) {
 		this.defaultTargetDubboConfigServer = defaultTargetDubboConfigServer;
 	}
@@ -50,6 +55,10 @@ public class DynamicDubboClient implements DubboClientFactory {
 
 	public void setOpenLog(boolean openLog) {
 		this.openLog = openLog;
+	}
+
+	public void setLogLength(int logLength) {
+		this.logLength = logLength;
 	}
 
 	public void afterPropertiesSet() {
@@ -96,6 +105,7 @@ public class DynamicDubboClient implements DubboClientFactory {
 				reference.setRegistry(registry);
 				reference.setInterface(dubboClient.getInterfaceClass());
 				reference.setTimeout(dubboClient.getTimeout());
+				reference.setRetries(dubboClient.getRetries());
 				reference.setProxy(DubboServiceFactory.EXTENSION_NAME);
 
 				if (StringUtils.isNotBlank(dubboClient.getProtocol())) {
@@ -165,7 +175,9 @@ public class DynamicDubboClient implements DubboClientFactory {
 				reference.setRegistry(registry);
 				reference.setInterface(dubboClient.getInterfaceClass());
 				reference.setTimeout(dubboClient.getTimeout());
-
+				reference.setRetries(dubboClient.getRetries());
+				reference.setProxy(DubboServiceFactory.EXTENSION_NAME);
+				
 				if (StringUtils.isNotBlank(dubboClient.getProtocol())) {
 					reference.setProtocol(dubboClient.getProtocol());
 				}
@@ -230,6 +242,9 @@ public class DynamicDubboClient implements DubboClientFactory {
 					reference.setApplication(application);
 					reference.setRegistry(registry);
 					reference.setInterface(dubboClient.getInterfaceClass());
+					reference.setTimeout(dubboClient.getTimeout());
+					reference.setRetries(dubboClient.getRetries());
+					reference.setProxy(DubboServiceFactory.EXTENSION_NAME);
 
 					if (StringUtils.isNotBlank(dubboClient.getProtocol())) {
 						reference.setProtocol(dubboClient.getProtocol());
@@ -258,6 +273,7 @@ public class DynamicDubboClient implements DubboClientFactory {
 
 	public void initDubboLog() {
 		DubboClientFilter.setOpenLog(openLog);
+		DubboClientFilter.setLogLength(logLength);
 	}
 
 	private String getDubboClientKey(String beanId) {

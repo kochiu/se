@@ -1,13 +1,13 @@
 package com.kochiu.se.core.quartz.job;
 
-import com.kochiu.se.core.context.SpringContextHolder;
+import com.kochiu.se.common.exception.SystemException;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.kochiu.se.common.exception.SystemException;
+import com.kochiu.se.core.context.SpringContextHolder;
 import com.kochiu.se.core.quartz.source.DynamicQuartz;
 
 public class JobProxy implements Job {

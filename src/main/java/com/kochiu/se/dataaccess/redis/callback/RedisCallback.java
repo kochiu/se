@@ -1,9 +1,8 @@
 package com.kochiu.se.dataaccess.redis.callback;
 
+import com.kochiu.se.dataaccess.redis.serialize.RedisSerializer;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.RedisConnection;
-
-import com.kochiu.se.dataaccess.redis.serialize.RedisSerializer;
 
 public abstract class RedisCallback<T> implements org.springframework.data.redis.core.RedisCallback<T> {
 

@@ -4,12 +4,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.kochiu.se.common.exception.SystemException;
 import com.kochiu.se.dataaccess.hbase.template.HbaseTemplateProxy;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.data.hadoop.hbase.HbaseTemplate;
 import org.springframework.data.hadoop.hbase.TableCallback;
-
-import com.kochiu.se.common.exception.SystemException;
 
 /**
  * 动态hbase
@@ -56,7 +55,7 @@ public class DynamicHbaseSource {
 	public void afterPropertiesSet() {
 		Set<Entry<String, HbaseTemplateProxy>> set = targetHbaseSources.entrySet();
 
-		for (Map.Entry<String, HbaseTemplateProxy> entry : set) {
+		for (Entry<String, HbaseTemplateProxy> entry : set) {
 			HbaseTemplateProxy hbaseTemplateProxy = entry.getValue();
 			HbaseTemplate hbaseTemplate = hbaseTemplateProxy.getHbaseTemplate();
 			hbaseTemplate.afterPropertiesSet();

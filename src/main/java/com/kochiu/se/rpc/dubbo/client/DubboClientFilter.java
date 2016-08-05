@@ -1,5 +1,7 @@
 package com.kochiu.se.rpc.dubbo.client;
 
+import java.lang.reflect.InvocationTargetException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,12 +25,18 @@ public class DubboClientFilter implements Filter {
 
 	public static final String EXTENSION_NAME = "consumercontext";
 
-	private static final Logger logger = LoggerFactory.getLogger(DubboClientFilter.class);
-	
+	private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
 	private static boolean openLog;
-	
+
+	private static int logLength;
+
 	public static void setOpenLog(boolean openLog) {
 		DubboClientFilter.openLog = openLog;
+	}
+
+	public static void setLogLength(int logLength) {
+		DubboClientFilter.logLength = logLength;
 	}
 
 	public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
@@ -43,15 +51,23 @@ public class DubboClientFilter implements Filter {
 			}
 
 			Object obj = null;
-			String className = invocation.getClass().getCanonicalName();
+			String className = invoker.getInterface().getName();
 			String methodName = invocation.getMethodName();
 			Object[] arguments = invocation.getArguments();
 
 			try {
 				obj = invoker.invoke(invocation);
-				return (Result) obj;
+				Result result = getResult(obj, invoker);
+				return result;
 			} catch (Throwable t) {
-				obj = t.getClass().getCanonicalName() + ":" + t.getMessage();
+				if (t instanceof InvocationTargetException) {
+					InvocationTargetException ite = (InvocationTargetException) t;
+					Throwable e = ite.getTargetException();
+					obj = e.getClass().getCanonicalName() + ":" + e.getMessage();
+				} else {
+					obj = t.getClass().getCanonicalName() + ":" + t.getMessage();
+				}
+				
 				throw t;
 			} finally {
 				try {
@@ -70,9 +86,10 @@ public class DubboClientFilter implements Filter {
 					endTime = (endTime == 0 ? System.currentTimeMillis() : endTime);
 					// 打印日志
 					String rpcLog = getRpcLog(className, methodName, inputParams, rspResult, startTime, endTime);
+					int logLength = DubboClientFilter.logLength != 0 ? DubboClientFilter.logLength : ContextConstants.LOG_MAX_LENGTH;
 
-					if (rpcLog.length() > ContextConstants.LOG_MAX_LENGTH) {
-						rpcLog = rpcLog.substring(0, ContextConstants.LOG_MAX_LENGTH);
+					if (logLength != -1 && rpcLog.length() > logLength) {
+						rpcLog = rpcLog.substring(0, logLength);
 					}
 
 					logger.info(rpcLog);
@@ -84,11 +101,18 @@ public class DubboClientFilter implements Filter {
 			}
 		} else {
 			try {
-				return invoker.invoke(invocation);
+				Object obj = invoker.invoke(invocation);
+				Result result = getResult(obj, invoker);
+				return result;
 			} finally {
 				RpcContext.getContext().clearAttachments();
 			}
 		}
+	}
+
+	private Result getResult(Object obj, Invoker<?> invoker) {
+		Result result = (Result) obj;
+		return result;
 	}
 
 	private String getRpcLog(String className, String methodName, String inputParams, String rspResult, long startTime, long endTime) {
@@ -100,4 +124,5 @@ public class DubboClientFilter implements Filter {
 		return String.format("[Client] %s -> %s - %s|%s|IN:%s|OUT:%s|[start:%s, end:%s, cost:%dms]", remoteAddress, localAddress, className, methodName,
 				inputParams, rspResult, startTimeStr, endTimeStr, cost);
 	}
+
 }

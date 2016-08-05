@@ -8,6 +8,12 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import com.kochiu.se.common.util.ConsistenHashUtil;
+import com.kochiu.se.common.util.ReflectUtil;
+import com.kochiu.se.common.util.sql.SqlParserUtil;
+import com.kochiu.se.dataaccess.mysql.ddl.DdlConfig;
+import com.kochiu.se.dataaccess.mysql.ddl.DdlTable;
+import com.kochiu.se.dataaccess.mysql.source.interceptor.SqlLogInterceptor;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.executor.statement.RoutingStatementHandler;
 import org.apache.ibatis.executor.statement.StatementHandler;
@@ -18,13 +24,6 @@ import org.apache.ibatis.plugin.Intercepts;
 import org.apache.ibatis.plugin.Invocation;
 import org.apache.ibatis.plugin.Plugin;
 import org.apache.ibatis.plugin.Signature;
-
-import com.kochiu.se.common.util.ConsistenHashUtil;
-import com.kochiu.se.common.util.ReflectUtil;
-import com.kochiu.se.common.util.sql.SqlParserUtil;
-import com.kochiu.se.dataaccess.mysql.ddl.DdlConfig;
-import com.kochiu.se.dataaccess.mysql.ddl.DdlTable;
-import com.kochiu.se.dataaccess.mysql.source.interceptor.SqlLogInterceptor;
 
 /**
  * 动态分库分表拦截器

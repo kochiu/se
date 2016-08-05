@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Copyright (C) 2012-2013 kochiu, Inc. Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
-	file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 
-	Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS 
-	IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language 
+	file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+	Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS
+	IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
 	governing permissions and limitations under the License. -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.kochiu.systemframework</groupId>
 	<artifactId>se</artifactId>
 	<packaging>jar</packaging>
-	<version>1.1.7</version>
+	<version>1.2.0</version>
 	<name>se</name>
-	<description>kochiu se framework</description>
+	<description>kociu se framework</description>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -35,9 +35,9 @@
 		<dep.servlet-api.version>2.5</dep.servlet-api.version>
 		<dep.javax.servlet-api.version>3.1.0</dep.javax.servlet-api.version>
 		<dep.jsp-api.version>2.1</dep.jsp-api.version>
-		<dep.spring-extension.version>4.0.0.RELEASE</dep.spring-extension.version>
+		<dep.spring-extension.version>4.1.1.RELEASE</dep.spring-extension.version>
 		<dep.mybatis.version>3.1.1</dep.mybatis.version>
-		<dep.mybatis-spring.version>1.1.1</dep.mybatis-spring.version>
+		<dep.mybatis-spring.version>1.2.4</dep.mybatis-spring.version>
 		<dep.mybatis-guice.version>3.0</dep.mybatis-guice.version>
 		<dep.cglib.version>3.1</dep.cglib.version>
 		<dep.velocity.version>1.7</dep.velocity.version>
@@ -59,7 +59,7 @@
 		<dep.quartz.version>2.2.1</dep.quartz.version>
 		<dep.poi.version>3.9</dep.poi.version>
 		<dep.aspectj.version>1.7.4</dep.aspectj.version>
-		<dep.jsqlparser.version>0.7.1</dep.jsqlparser.version>
+		<dep.jsqlparser.version>0.7.0</dep.jsqlparser.version>
 		<dep.commons-codec.version>1.8</dep.commons-codec.version>
 		<dep.commons-fileupload.version>1.2.2</dep.commons-fileupload.version>
 		<dep.commons-io.version>1.4</dep.commons-io.version>
@@ -74,15 +74,42 @@
 		<dep.zookeeper.version>3.4.6</dep.zookeeper.version>
 		<dep.zkclient.version>0.4</dep.zkclient.version>
 		<dep.tbschedule.version>3.2.18</dep.tbschedule.version>
-		<dep.im4java.version>1.4.1</dep.im4java.version>
+		<dep.im4java.version>1.4.0</dep.im4java.version>
 		<!-- junit -->
 		<dep.junit.version>4.11</dep.junit.version>
+		<dep.email.version>1.4.1</dep.email.version>
 	</properties>
 	<prerequisites>
 		<maven>${jm.maven.version}</maven>
 	</prerequisites>
 	<dependencyManagement>
 		<dependencies>
+			<!--<dependency>
+				<groupId>org.apache.kafka</groupId>
+				<artifactId>kafka_2.10</artifactId>
+				<version>0.8.0</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.integration</groupId>
+				<artifactId>spring-integration-kafka</artifactId>
+				<version>2.0.0.RELEASE</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.kafka</groupId>
+				<artifactId>spring-kafka</artifactId>
+				<version>1.0.0.RELEASE</version>
+			</dependency>-->
+			<dependency>
+				<groupId>org.springframework.kafka</groupId>
+				<artifactId>spring-kafka</artifactId>
+				<version>1.0.0.RELEASE</version>
+			</dependency>
+			<!-- mail -->
+			<dependency>
+				<groupId>javax.mail</groupId>
+				<artifactId>mail</artifactId>
+				<version>${dep.email.version}</version>
+			</dependency>
 			<!-- fastjson -->
 			<dependency>
 				<groupId>com.alibaba</groupId>
@@ -452,6 +479,27 @@
 		</dependencies>
 	</dependencyManagement>
 	<dependencies>
+		<!--<dependency>
+			<groupId>org.apache.kafka</groupId>
+			<artifactId>kafka_2.10</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.integration</groupId>
+			<artifactId>spring-integration-kafka</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka</artifactId>
+		</dependency>-->
+		<dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka</artifactId>
+		</dependency>
+		<!-- mail -->
+		<dependency>
+			<groupId>javax.mail</groupId>
+			<artifactId>mail</artifactId>
+		</dependency>
 		<!-- fastjson -->
 		<dependency>
 			<groupId>com.alibaba</groupId>
@@ -1001,6 +1049,7 @@
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<configuration>
 					<source>${project.build.targetJdk}</source>
+					<target>${project.build.targetJdk}</target>
 					<charset>${project.build.sourceEncoding}</charset>
 					<encoding>${project.build.sourceEncoding}</encoding>
 					<docencoding>${project.build.sourceEncoding}</docencoding>
@@ -1070,7 +1119,7 @@
 		</plugins>
 	</build>
 	<!-- Environment Settings -->
-	<distributionManagement>
+	<!--<distributionManagement>
 		<repository>
 			<id>releases</id>
 			<name>develop Nexus Repository</name>
@@ -1081,5 +1130,5 @@
 			<name>develop Nexus Repository</name>
 			<url>http://maven.berbon.com/nexus/content/repositories/snapshots</url>
 		</snapshotRepository>
-	</distributionManagement>
+	</distributionManagement>-->
 </project>

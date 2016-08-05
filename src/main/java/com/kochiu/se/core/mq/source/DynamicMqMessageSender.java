@@ -2,20 +2,22 @@ package com.kochiu.se.core.mq.source;
 
 import java.util.Map;
 
+import com.kochiu.se.common.domain.ContextConstants;
+import com.kochiu.se.common.exception.SystemException;
+import com.kochiu.se.common.util.ReflectUtil;
 import com.kochiu.se.common.util.UUIDUtil;
 import com.kochiu.se.core.mq.producer.MqMessageSender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessagePostProcessor;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
-import com.kochiu.se.common.domain.ContextConstants;
-import com.kochiu.se.common.exception.SystemException;
-import com.kochiu.se.common.util.ReflectUtil;
 import com.kochiu.se.common.util.date.DateUtil;
 
 public class DynamicMqMessageSender implements MqMessageSender {
@@ -23,6 +25,10 @@ public class DynamicMqMessageSender implements MqMessageSender {
 	private static final Logger log = LoggerFactory.getLogger(DynamicMqMessageSender.class);
 
 	private static final String SUCCESS = "success";
+	
+	private static final String DEFAULT_MESSAGE_ENCODE = "UTF-8";
+	
+	private static final MessageDeliveryMode DEFAULT_MESSAGE_DELIVERY = MessageDeliveryMode.PERSISTENT;
 
 	private RabbitTemplate defaultTargetRabbitTemplate;
 
@@ -32,6 +38,11 @@ public class DynamicMqMessageSender implements MqMessageSender {
 	 * 日志开关，默认为false不打开
 	 */
 	private boolean openLog;
+
+	/**
+	 * 日志最大长度，如果不传则默认1000，传-1则不限制日志打印长度
+	 */
+	private int logLength;
 
 	public void setDefaultTargetRabbitTemplate(RabbitTemplate defaultTargetRabbitTemplate) {
 		this.defaultTargetRabbitTemplate = defaultTargetRabbitTemplate;
@@ -43,6 +54,10 @@ public class DynamicMqMessageSender implements MqMessageSender {
 
 	public void setOpenLog(boolean openLog) {
 		this.openLog = openLog;
+	}
+
+	public void setLogLength(int logLength) {
+		this.logLength = logLength;
 	}
 
 	public String sendMessage(final Object messageObj) {
@@ -74,7 +89,10 @@ public class DynamicMqMessageSender implements MqMessageSender {
 				rabbitTemplate.convertAndSend(messageObj, new MessagePostProcessor() {
 					@Override
 					public Message postProcessMessage(Message message) throws AmqpException {
-						message.getMessageProperties().setMessageId(messageId);
+						MessageProperties messageProperties = message.getMessageProperties();
+						messageProperties.setMessageId(messageId);
+						messageProperties.setContentEncoding(DEFAULT_MESSAGE_ENCODE);
+						messageProperties.setDeliveryMode(DEFAULT_MESSAGE_DELIVERY);
 						return message;
 					}
 				});
@@ -99,9 +117,10 @@ public class DynamicMqMessageSender implements MqMessageSender {
 				endTime = (endTime == 0 ? System.currentTimeMillis() : endTime);
 				// 打印日志
 				String messageLog = getMessageLog(messageIdStr, messageContent, exchange, routingKey, mqResult, startTime, endTime);
+				int logLength = this.logLength != 0 ? this.logLength : ContextConstants.LOG_MAX_LENGTH;
 
-				if (messageLog.length() > ContextConstants.LOG_MAX_LENGTH) {
-					messageLog = messageLog.substring(0, ContextConstants.LOG_MAX_LENGTH);
+				if (logLength != -1 && messageLog.length() > logLength) {
+					messageLog = messageLog.substring(0, logLength);
 				}
 
 				log.info(messageLog);
@@ -152,7 +171,10 @@ public class DynamicMqMessageSender implements MqMessageSender {
 				rabbitTemplate.convertAndSend(exchange, routingKey, messageObj, new MessagePostProcessor() {
 					@Override
 					public Message postProcessMessage(Message message) throws AmqpException {
-						message.getMessageProperties().setMessageId(messageId);
+						MessageProperties messageProperties = message.getMessageProperties();
+						messageProperties.setMessageId(messageId);
+						messageProperties.setContentEncoding(DEFAULT_MESSAGE_ENCODE);
+						messageProperties.setDeliveryMode(DEFAULT_MESSAGE_DELIVERY);
 						return message;
 					}
 				});

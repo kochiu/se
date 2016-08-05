@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.kochiu.se.core.context.SpringContextHolder;
 import com.kochiu.se.rpc.dubbo.config.DubboConfigServer;
 import com.kochiu.se.rpc.dubbo.provider.DubboService;
+import com.kochiu.se.core.context.SpringContextHolder;
 
 /**
  * 动态创建DubboProvider的工具类

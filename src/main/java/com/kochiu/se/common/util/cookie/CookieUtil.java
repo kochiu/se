@@ -8,11 +8,11 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.kochiu.se.common.util.secret.AESUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kochiu.se.common.exception.SystemException;
+import com.kochiu.se.common.util.secret.AESUtil;
 
 public class CookieUtil {
 
@@ -93,7 +93,7 @@ public class CookieUtil {
 		try {
 			if (cookie != null) {
 				String value = cookie.getValue();
-				value = AESUtils.decrypt(value, aesKey);
+				value = AESUtil.decryptStr(value, aesKey);
 				value = URLDecoder.decode(value, DEFAULT_ENCODE);
 				return value;
 			}
@@ -120,7 +120,7 @@ public class CookieUtil {
 	public static Cookie createCookie(String name, String value, String domain, String path, boolean secure, boolean httpOnly, int maxAge, String aesKey) {
 		try {
 			value = URLEncoder.encode(value, DEFAULT_ENCODE);
-			value = AESUtils.encrypt(value, aesKey);
+			value = AESUtil.encryptStr(value, aesKey);
 			Cookie cookie = new Cookie(name, value);
 			cookie.setDomain(domain);
 			cookie.setPath(path);

@@ -17,12 +17,11 @@ import java.util.Set;
 import javax.sql.DataSource;
 
 import com.kochiu.se.common.exception.SystemException;
-import com.kochiu.se.common.util.StringUtil;
-import com.kochiu.se.core.context.SpringContextHolder;
 import com.kochiu.se.core.quartz.config.QuartzConfigServer;
 import com.kochiu.se.core.quartz.config.QuartzParameter;
 import com.kochiu.se.core.quartz.job.BaseJob;
 import com.kochiu.se.core.quartz.job.JobProxy;
+import com.kochiu.se.dataaccess.mysql.source.DynamicDataSource;
 import org.apache.commons.lang.StringUtils;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.CronTrigger;
@@ -44,7 +43,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
-import com.kochiu.se.dataaccess.mysql.source.DynamicDataSource;
+import com.kochiu.se.common.util.StringUtil;
+import com.kochiu.se.core.context.SpringContextHolder;
 
 public class DynamicQuartz {
 
@@ -58,16 +58,25 @@ public class DynamicQuartz {
 
 	public static final String[] SCHEDULER_CONSTANTS = { IS_CRON_TRIGGER, TRIGGER_EXPRESSION, JOB_CLASS_NAME, SCHEDULER_DATASOURCE_KEY };
 
+	private final static String QUARTZ_MANAGER_NAME = "workerMonitorScheduler";
+
 	private final Logger log = LoggerFactory.getLogger(this.getClass());
 
 	private Map<String, QuartzConfigServer> targetQuartzConfigServerMap;
 
 	private QuartzConfigServer defaultTargetQuartzSource;
 
+	private String hostQuartzName;
+
 	/**
 	 * 日志开关，默认为false不打开
 	 */
 	private boolean openLog;
+
+	/**
+	 * 日志最大长度，如果不传则默认1000，传-1则不限制日志打印长度
+	 */
+	private int logLength;
 
 	public void setTargetQuartzConfigServerMap(Map<String, QuartzConfigServer> targetQuartzConfigServerMap) {
 		this.targetQuartzConfigServerMap = targetQuartzConfigServerMap;
@@ -81,11 +90,16 @@ public class DynamicQuartz {
 		this.openLog = openLog;
 	}
 
+	public void setLogLength(int logLength) {
+		this.logLength = logLength;
+	}
+
 	public void afterPropertiesSet() throws Exception {
 		Set<Entry<String, QuartzConfigServer>> set = targetQuartzConfigServerMap.entrySet();
 		List<QuartzConfigServer> quartzConfigServerList = new ArrayList<QuartzConfigServer>();
 
-		for (Map.Entry<String, QuartzConfigServer> entry : set) {
+		for (Entry<String, QuartzConfigServer> entry : set) {
+			String configServerKey = entry.getKey();
 			QuartzConfigServer quartzConfigServer = entry.getValue();
 
 			if (quartzConfigServer != null) {
@@ -96,6 +110,7 @@ public class DynamicQuartz {
 				String dataSourceKey = quartzConfigServer.getDataSourceKey();
 				String instanceName = p.getProperty("org.quartz.scheduler.instanceName");
 				instanceName = applicationName + instanceName;
+				hostQuartzName = configServerKey + ":" + instanceName;
 				p.setProperty("org.quartz.scheduler.instanceName", instanceName);
 				p.setProperty("org.quartz.jobStore.dataSource", dataSourceKey);
 				DynamicDataSource dynamicDataSource = (DynamicDataSource) SpringContextHolder.applicationContext.getBean(dataSourceName);
@@ -129,12 +144,14 @@ public class DynamicQuartz {
 		}
 	}
 
-	public Scheduler getScheduler(String configServerKey, String schedName) {
+	public QuartzSchedulerFactory getQuartzSchedulerFactory(String configServerKey, String schedName) {
+		vailPermission(configServerKey);
+
 		if (configServerKey == null) {
 			configServerKey = QuartzSwitcher.getQuartzType();
 		}
 
-		Scheduler scheduler = null;
+		QuartzSchedulerFactory quartzSchedulerFactory = null;
 
 		try {
 			if (StringUtils.isNotBlank(configServerKey)) {
@@ -151,23 +168,24 @@ public class DynamicQuartz {
 						stdSchedulerFactory.initialize(p);
 					}
 
-					scheduler = stdSchedulerFactory.getScheduler();
+					Scheduler scheduler = stdSchedulerFactory.getScheduler();
 					scheduler.getContext().put("org.quartz.jobStore.dataSource", quartzConfigServer.getDataSourceKey());
+					quartzSchedulerFactory = new QuartzSchedulerFactory(stdSchedulerFactory, scheduler);
 				}
 			}
-		} catch (SchedulerException e) {
-			log.error("GetScheduler error", e);
+		} catch (Exception e) {
+			log.error("GetQuartzSchedulerFactory error", e);
 		}
 
-		if (scheduler == null) {
-			scheduler = getDefaultScheduler(schedName);
+		if (quartzSchedulerFactory == null) {
+			quartzSchedulerFactory = getDefaultQuartzSchedulerFactory(schedName);
 		}
 
-		if (scheduler == null) {
-			throw new SystemException("Can not get a scheduler!");
+		if (quartzSchedulerFactory == null) {
+			throw new SystemException("Can not get a QuartzSchedulerFactory!");
 		}
 
-		return scheduler;
+		return quartzSchedulerFactory;
 	}
 
 	public List<Scheduler> getAllSchedulers(String configServerKey) {
@@ -196,21 +214,29 @@ public class DynamicQuartz {
 			Properties quartzProperties = quartzConfigServer.getQuartzProperties();
 			String tablePrefix = quartzProperties.getProperty("org.quartz.jobStore.tablePrefix");
 			schedulerNames = selectAllSchedulerNames(tablePrefix, conn);
+
+			if (schedulerNames != null && !schedulerNames.isEmpty()) {
+				schedulers = new LinkedList<Scheduler>();
+
+				for (String schedName : schedulerNames) {
+					QuartzSchedulerFactory quartzSchedulerFactory = getQuartzSchedulerFactory(configServerKey, schedName);
+					Scheduler scheduler = quartzSchedulerFactory.getScheduler();
+					schedulers.add(scheduler);
+				}
+			}
+
+			if (schedulers == null) {
+				schedulers = new ArrayList<Scheduler>();
+			}
 		} catch (Exception e) {
 			log.error("GetAllSchedulers error", e);
-		}
-
-		if (schedulerNames != null && !schedulerNames.isEmpty()) {
-			schedulers = new LinkedList<Scheduler>();
-
-			for (String schedulerName : schedulerNames) {
-				Scheduler scheduler = getScheduler(configServerKey, schedulerName);
-				schedulers.add(scheduler);
+		} finally {
+			try {
+				if (conn != null) {
+					conn.close();
+				}
+			} catch (Throwable ignored) {
 			}
-		}
-
-		if (schedulers == null) {
-			throw new SystemException("Can not get all schedulers!");
 		}
 
 		return schedulers;
@@ -218,7 +244,8 @@ public class DynamicQuartz {
 
 	public void saveOrUpdateJob(QuartzParameter config, String configServerKey, boolean alreadyWarning) {
 		try {
-			Scheduler scheduler = getScheduler(configServerKey, config.getSchedName());
+			QuartzSchedulerFactory quartzSchedulerFactory = getQuartzSchedulerFactory(configServerKey, config.getSchedName());
+			Scheduler scheduler = quartzSchedulerFactory.getScheduler();
 			String dataSourceKey = scheduler.getContext().getString("org.quartz.jobStore.dataSource");
 			JobKey jobKey = JobKey.jobKey(config.getJobName(), config.getJobGroup());
 			TriggerKey triggerKey = TriggerKey.triggerKey(config.getTriggerName(), config.getTriggerGroup());
@@ -242,7 +269,8 @@ public class DynamicQuartz {
 
 	public void updateJob(QuartzParameter config, String configServerKey) {
 		try {
-			Scheduler scheduler = getScheduler(configServerKey, config.getSchedName());
+			QuartzSchedulerFactory quartzSchedulerFactory = getQuartzSchedulerFactory(configServerKey, config.getSchedName());
+			Scheduler scheduler = quartzSchedulerFactory.getScheduler();
 			String dataSourceKey = scheduler.getContext().getString("org.quartz.jobStore.dataSource");
 			JobKey jobKey = JobKey.jobKey(config.getJobName(), config.getJobGroup());
 			TriggerKey triggerKey = TriggerKey.triggerKey(config.getTriggerName(), config.getTriggerGroup());
@@ -271,7 +299,8 @@ public class DynamicQuartz {
 		String schedName = config.getSchedName();
 		String triggerName = config.getTriggerName();
 		String triggerGroup = config.getTriggerGroup();
-		Scheduler scheduler = getScheduler(configServerKey, schedName);
+		QuartzSchedulerFactory quartzSchedulerFactory = getQuartzSchedulerFactory(configServerKey, schedName);
+		Scheduler scheduler = quartzSchedulerFactory.getScheduler();
 
 		try {
 			scheduler.pauseTrigger(new TriggerKey(triggerName, triggerGroup));
@@ -289,7 +318,8 @@ public class DynamicQuartz {
 		String schedName = config.getSchedName();
 		String triggerName = config.getTriggerName();
 		String triggerGroup = config.getTriggerGroup();
-		Scheduler scheduler = getScheduler(configServerKey, schedName);
+		QuartzSchedulerFactory quartzSchedulerFactory = getQuartzSchedulerFactory(configServerKey, schedName);
+		Scheduler scheduler = quartzSchedulerFactory.getScheduler();
 
 		try {
 			scheduler.resumeTrigger(new TriggerKey(triggerName, triggerGroup));
@@ -307,7 +337,8 @@ public class DynamicQuartz {
 		String schedName = config.getSchedName();
 		String triggerName = config.getTriggerName();
 		String triggerGroup = config.getTriggerGroup();
-		Scheduler scheduler = getScheduler(configServerKey, schedName);
+		QuartzSchedulerFactory quartzSchedulerFactory = getQuartzSchedulerFactory(configServerKey, schedName);
+		Scheduler scheduler = quartzSchedulerFactory.getScheduler();
 
 		try {
 			scheduler.unscheduleJob(new TriggerKey(triggerName, triggerGroup));
@@ -318,28 +349,59 @@ public class DynamicQuartz {
 
 	public void initQuartzLog() {
 		BaseJob.setOpenLog(openLog);
+		BaseJob.setLogLength(logLength);
 	}
 
-	private Scheduler getDefaultScheduler(String schedName) {
-		Scheduler scheduler = null;
+	public class QuartzSchedulerFactory {
 
-		try {
-			StdSchedulerFactory stdSchedulerFactory = defaultTargetQuartzSource.getStdSchedulerFactory();
+		private StdSchedulerFactory stdSchedulerFactory;
 
-			if (StringUtil.isNotBlank(schedName)) {
-				Properties p = defaultTargetQuartzSource.getQuartzProperties();
-				p.setProperty("org.quartz.scheduler.instanceName", schedName);
-				p.setProperty("org.quartz.jobStore.dataSource", defaultTargetQuartzSource.getDataSourceKey());
-				stdSchedulerFactory.initialize(p);
-			}
+		private Scheduler scheduler;
 
-			scheduler = stdSchedulerFactory.getScheduler();
-			scheduler.getContext().put("org.quartz.jobStore.dataSource", defaultTargetQuartzSource.getDataSourceKey());
-		} catch (SchedulerException e) {
-			log.error("GetDefaultScheduler error", e);
+		public QuartzSchedulerFactory(StdSchedulerFactory stdSchedulerFactory, Scheduler scheduler) {
+			this.stdSchedulerFactory = stdSchedulerFactory;
+			this.scheduler = scheduler;
 		}
 
-		return scheduler;
+		public StdSchedulerFactory getStdSchedulerFactory() {
+			return stdSchedulerFactory;
+		}
+
+		public void setStdSchedulerFactory(StdSchedulerFactory stdSchedulerFactory) {
+			this.stdSchedulerFactory = stdSchedulerFactory;
+		}
+
+		public Scheduler getScheduler() {
+			return scheduler;
+		}
+
+		public void setScheduler(Scheduler scheduler) {
+			this.scheduler = scheduler;
+		}
+	}
+
+	private QuartzSchedulerFactory getDefaultQuartzSchedulerFactory(String schedName) {
+		QuartzSchedulerFactory defaultQuartzSchedulerFactory = null;
+
+		try {
+			StdSchedulerFactory defaultStdSchedulerFactory = defaultTargetQuartzSource.getStdSchedulerFactory();
+
+			if (StringUtil.isNotBlank(schedName)) {
+				Properties quartzProperties = defaultTargetQuartzSource.getQuartzProperties();
+				Properties p = (Properties) quartzProperties.clone();
+				p.setProperty("org.quartz.scheduler.instanceName", schedName);
+				p.setProperty("org.quartz.jobStore.dataSource", defaultTargetQuartzSource.getDataSourceKey());
+				defaultStdSchedulerFactory.initialize(p);
+			}
+
+			Scheduler defaultScheduler = defaultStdSchedulerFactory.getScheduler();
+			defaultScheduler.getContext().put("org.quartz.jobStore.dataSource", defaultTargetQuartzSource.getDataSourceKey());
+			defaultQuartzSchedulerFactory = new QuartzSchedulerFactory(defaultStdSchedulerFactory, defaultScheduler);
+		} catch (SchedulerException e) {
+			log.error("GetDefaultQuartzSchedulerFactory error", e);
+		}
+
+		return defaultQuartzSchedulerFactory;
 	}
 
 	private void startQuartz(QuartzConfigServer quartzConfigServer) throws SchedulerException {
@@ -458,4 +520,19 @@ public class DynamicQuartz {
 		}
 	}
 
+	private void vailPermission(String configServerKey) {
+		if (configServerKey == null) {
+			configServerKey = QuartzSwitcher.getQuartzType();
+		}
+
+		if (configServerKey == null) {
+			configServerKey = defaultTargetQuartzSource.getConfigServerKey();
+		}
+
+		String managerQuartzName = configServerKey + ":" + QUARTZ_MANAGER_NAME;
+
+		if (hostQuartzName == null || !hostQuartzName.equals(managerQuartzName)) {
+			throw new SystemException("Have no permission to operate!");
+		}
+	}
 }

@@ -3,12 +3,14 @@ package com.kochiu.se.web.handler;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.kochiu.se.common.domain.Result;
-import com.kochiu.se.common.util.http.URLUtil;
 import org.springframework.core.MethodParameter;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodReturnValueHandler;
 import org.springframework.web.method.support.ModelAndViewContainer;
+
+import com.kochiu.se.common.domain.Result;
+import com.kochiu.se.common.util.http.URLUtil;
+import com.kochiu.se.web.filter.EncryptFilter;
 
 /**
  * 对自定义的返回值进行处理，一般是序列化成json字符串
@@ -49,6 +51,7 @@ public class CommonMethodReturnValueHandler implements HandlerMethodReturnValueH
 			}
 			
 			request.setAttribute("result", result);
+			request.setAttribute(EncryptFilter.ENCRPY_HEADER, true);
 			String responseStr = responseSb.toString();
 			response.getWriter().write(responseStr);
 			// 表明该请求已经处理，后面spring不会再处理

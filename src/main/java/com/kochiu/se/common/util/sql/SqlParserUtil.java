@@ -8,14 +8,13 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.kochiu.se.common.exception.SystemException;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ParameterMapping;
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.type.TypeHandlerRegistry;
-
-import com.kochiu.se.common.exception.SystemException;
 
 /**
  * SQL语句解析器类.可以整体解析一个sql的区段
@@ -223,16 +222,19 @@ public final class SqlParserUtil {
 	 */
 	public static String getParameterValue(Object obj) {
 		String value = null;
+		
 		if (obj == null) {
 			value = "null";
 		} else if (obj instanceof String) {
 			value = "'" + obj.toString() + "'";
 		} else if (obj instanceof Date) {
+			Date date = (Date) obj;
 			DateFormat formatter = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, Locale.CHINA);
-			value = "'" + formatter.format(new Date()) + "'";
+			value = "'" + formatter.format(date) + "'";
 		} else {
 			value = obj.toString();
 		}
+		
 		return getSafeString(value);
 	}
 

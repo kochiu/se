@@ -7,14 +7,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.kochiu.se.common.exception.SystemException;
+import com.kochiu.se.common.util.ImageUtil;
+import com.kochiu.se.dataaccess.fastdfs.client.FastdfsClient;
 import com.kochiu.se.dataaccess.fastdfs.client.FastdfsClientProxy;
 import com.kochiu.se.dataaccess.fastdfs.config.FileInfo;
 import org.apache.commons.lang.StringUtils;
 
-import com.kochiu.se.common.exception.SystemException;
 import com.kochiu.se.common.util.FileUtil;
-import com.kochiu.se.common.util.ImageUtil;
-import com.kochiu.se.dataaccess.fastdfs.client.FastdfsClient;
 import com.kochiu.se.dataaccess.fastdfs.config.ImageInfo;
 
 /**
@@ -304,7 +304,7 @@ public class DynamicFastdfsSource {
 	public void afterPropertiesSet() {
 		Set<Entry<String, FastdfsClientProxy>> set = targetFastdfsSources.entrySet();
 
-		for (Map.Entry<String, FastdfsClientProxy> entry : set) {
+		for (Entry<String, FastdfsClientProxy> entry : set) {
 			FastdfsClientProxy fastdfsClientProxy = entry.getValue();
 			FastdfsClient fastdfsClient = fastdfsClientProxy.getFastdfsClient();
 			fastdfsClient.afterPropertiesSet();

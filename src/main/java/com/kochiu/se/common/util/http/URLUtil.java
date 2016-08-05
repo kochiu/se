@@ -3,8 +3,12 @@
  */
 package com.kochiu.se.common.util.http;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import javax.servlet.http.HttpServletRequest;
 
+import com.kochiu.se.common.exception.SystemException;
 import com.kochiu.se.common.util.StringUtil;
 
 /**
@@ -19,6 +23,8 @@ public class URLUtil {
 
 	// private final static String FORWARD_IP_BEFORE_NGINX_PROXY =
 	// "X-Forwarded-For";
+
+	private final static String ENVIRONMENT_GRAY = "GRAY_FLAG";
 
 	/**
 	 * 获取没有后缀的uri
@@ -92,14 +98,14 @@ public class URLUtil {
 	 */
 	public static final boolean isAjaxUrl(HttpServletRequest request) {
 		String accept = request.getHeader("Accept");
-		
-		if (accept.contains("application/json") || accept.contains("application/jsonp")) {
+
+		if (StringUtil.isNotBlank(accept) && (accept.contains("application/json") || accept.contains("application/jsonp"))) {
 			return true;
 		}
 
 		String uri = request.getRequestURI();
 		int suffixIndex = uri.lastIndexOf(".");
-		
+
 		if (suffixIndex != -1) {
 			String suffix = uri.substring(suffixIndex + 1);
 			if ("json".equals(suffix) || "jsonp".equals(suffix)) {
@@ -108,7 +114,7 @@ public class URLUtil {
 		}
 
 		String format = request.getParameter("format");
-		
+
 		if ("json".equals(format) || "jsonp".equals(format)) {
 			return true;
 		}
@@ -122,20 +128,27 @@ public class URLUtil {
 		return false;
 	}
 
+	/**
+	 * 是否是jsonp请求
+	 * 
+	 * @return
+	 */
 	public static final boolean isJsonp(HttpServletRequest request) {
 		String accept = request.getHeader("Accept");
-		if (accept.contains("application/jsonp")) {
+
+		if (StringUtil.isNotBlank(accept) && (accept.contains("application/jsonp"))) {
 			return true;
 		}
-		
+
 		String format = request.getParameter("format");
+
 		if ("jsonp".equals(format)) {
 			return true;
 		}
 
 		String uri = request.getRequestURI();
 		int suffixIndex = uri.lastIndexOf(".");
-		
+
 		if (suffixIndex != -1) {
 			String suffix = uri.substring(suffixIndex + 1);
 			if ("jsonp".equals(suffix)) {
@@ -180,4 +193,116 @@ public class URLUtil {
 
 		return String.valueOf(str);
 	}
+
+	/**
+	 * 灰度处理url(当前环境如果是灰度环境则会在url上增加灰度标志gray，如果不是灰度环境则不修改url)
+	 * 
+	 * @param url
+	 * @return
+	 */
+	public static String grayUrl(String url) {
+		if (url == null) {
+			throw new SystemException("输入的url为空");
+		}
+
+		String grayTag = getGrayTag();
+
+		if (StringUtil.isBlank(grayTag)) {
+			return url;
+		} else {
+			String domain = getDomain(url);
+			String http = getHttp(url);
+			String www = getWWW(url);
+			String uri = getURI(domain, url);
+
+			if (StringUtil.isNotBlank(domain)) {
+				domain = "." + domain;
+			}
+
+			if (!uri.equals(url)) {
+				url = http + www + grayTag + domain + uri;
+			}
+		}
+
+		return url;
+	}
+
+	private static String getDomain(String url) {
+		String domain = null;
+		Pattern p = Pattern.compile("(?<=http(s)?://)[^.].*?\\.(com|cn|net|org|biz|info|cc|tv)", Pattern.CASE_INSENSITIVE);
+		Matcher matcher = p.matcher(url);
+
+		if (matcher.find()) {
+			domain = matcher.group();
+		}
+
+		if (domain == null) {
+			domain = "";
+		} else {
+			String www = "www.";
+			int index = domain.indexOf("www.");
+
+			if (index != -1) {
+				domain = domain.substring(index + www.length());
+			}
+		}
+
+		return domain;
+	}
+
+	private static String getHttp(String url) {
+		String http = "";
+
+		if (url.indexOf("http://") != -1) {
+			http = "http://";
+		} else if (url.indexOf("https://") != -1) {
+			http = "https://";
+		}
+
+		return http;
+	}
+
+	private static String getWWW(String url) {
+		String www = "";
+
+		if (url.indexOf("www.") != -1) {
+			www = "www.";
+		}
+
+		return www;
+	}
+
+	private static String getURI(String domain, String url) {
+		String uri = "";
+
+		if (StringUtil.isNotBlank(domain)) {
+			int index = url.indexOf(domain);
+
+			if (index != -1) {
+				uri = url.substring(index + domain.length());
+			}
+		} else {
+			uri = url;
+		}
+
+		return uri;
+	}
+
+	private static String getGrayTag() {
+		String grayTag = System.getenv(ENVIRONMENT_GRAY);
+
+		if (grayTag == null) {
+			grayTag = System.getenv(ENVIRONMENT_GRAY.toLowerCase());
+		}
+
+		return grayTag;
+	}
+
+	public static void main(String[] args) {
+		String url = "https://payment.berbon.com/trade/callback/sztfBalancePay";
+		String grayUrl = URLUtil.grayUrl(url);
+
+		System.out.println(grayUrl);
+	}
+
 }

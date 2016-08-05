@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.kochiu.se.core.context.SpringContextHolder;
 import com.kochiu.se.dataaccess.memcache.client.MemcacheClientProxy;
+import com.kochiu.se.core.context.SpringContextHolder;
 
 /**
  * 动态创建memcache数据源的工具类

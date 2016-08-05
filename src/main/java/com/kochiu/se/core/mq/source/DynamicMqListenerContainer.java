@@ -34,6 +34,11 @@ public class DynamicMqListenerContainer {
 	 */
 	private boolean openLog;
 
+	/**
+	 * 日志最大长度，如果不传则默认1000，传-1则不限制日志打印长度
+	 */
+	private int logLength;
+
 	public void setTargetMqListenerContainerProxyMap(Map<String, MqListenerContainerProxy> targetMqListenerContainerProxy) {
 		this.targetMqListenerContainerProxy = targetMqListenerContainerProxy;
 	}
@@ -42,10 +47,14 @@ public class DynamicMqListenerContainer {
 		this.openLog = openLog;
 	}
 
+	public void setLogLength(int logLength) {
+		this.logLength = logLength;
+	}
+
 	public void afterPropertiesSet() {
 		Set<Entry<String, MqListenerContainerProxy>> set = targetMqListenerContainerProxy.entrySet();
 
-		for (Map.Entry<String, MqListenerContainerProxy> entry : set) {
+		for (Entry<String, MqListenerContainerProxy> entry : set) {
 			MqListenerContainerProxy mqListenerContainerProxy = entry.getValue();
 
 			if (mqListenerContainerProxy != null) {
@@ -67,6 +76,7 @@ public class DynamicMqListenerContainer {
 
 	public void initMqLog() {
 		MqMessageListener.setOpenLog(openLog);
+		MqMessageListener.setLogLength(logLength);
 	}
 
 	private void startMqListener(MqListenerContainerProxy mqListenerContainerProxy) {

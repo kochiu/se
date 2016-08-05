@@ -5,14 +5,15 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import com.kochiu.se.common.util.ConsistenHashUtil;
-import com.kochiu.se.common.util.StringUtil;
 import com.kochiu.se.core.domain.DdlRoute;
 import com.kochiu.se.dataaccess.mysql.ddl.DdlConfig;
 import com.kochiu.se.dataaccess.mysql.ddl.DdlTable;
-import com.kochiu.se.dataaccess.mysql.ddl.interceptor.DdlInterceptor;
 import com.kochiu.se.dataaccess.mysql.source.DynamicDataSource;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
+
+import com.kochiu.se.common.util.StringUtil;
+import com.kochiu.se.dataaccess.mysql.ddl.interceptor.DdlInterceptor;
 
 /**
  * 

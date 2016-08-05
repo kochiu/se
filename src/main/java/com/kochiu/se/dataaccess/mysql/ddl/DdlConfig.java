@@ -1,5 +1,7 @@
 package com.kochiu.se.dataaccess.mysql.ddl;
 
+import com.kochiu.se.common.util.poi.ExcelField;
+
 /**
  * 
  * @author zhihongp
@@ -7,15 +9,25 @@ package com.kochiu.se.dataaccess.mysql.ddl;
  */
 public class DdlConfig {
 
+	@ExcelField(order = 0, header = "表名")
 	private String table;
 
+	@ExcelField(order = 1, header = "分表字段")
 	private String column;
 
+	private String test;
+
+	@ExcelField(order = 2, header = "表个数")
 	private Integer tableNum;
 
+	@ExcelField(order = 3, header = "数据库")
 	private String db;
 
+	@ExcelField(order = 4, header = "数据库个数")
 	private Integer dbNum;
+
+	@ExcelField(order = 5, header = "是否支持事务")
+	private Boolean isTransaction;
 
 	public DdlConfig() {
 
@@ -27,6 +39,15 @@ public class DdlConfig {
 		this.tableNum = tableNum;
 		this.db = db;
 		this.dbNum = dbNum;
+	}
+
+	public DdlConfig(String table, String column, Integer tableNum, String db, Integer dbNum, Boolean isTransaction) {
+		this.table = table;
+		this.column = column;
+		this.tableNum = tableNum;
+		this.db = db;
+		this.dbNum = dbNum;
+		this.isTransaction = isTransaction;
 	}
 
 	public String getTable() {
@@ -69,6 +90,14 @@ public class DdlConfig {
 		this.dbNum = dbNum;
 	}
 
+	public String getTest() {
+		return test;
+	}
+
+	public void setTest(String test) {
+		this.test = test;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -102,7 +131,8 @@ public class DdlConfig {
 
 	@Override
 	public String toString() {
-		return "DdlConfig [table=" + table + ", column=" + column + ", tableNum=" + tableNum + ", db=" + db + ", dbNum=" + dbNum + "]";
+		return "DdlConfig [table=" + table + ", column=" + column + ", test=" + test + ", tableNum=" + tableNum + ", db=" + db + ", dbNum=" + dbNum
+				+ ", isTransaction=" + isTransaction + "]";
 	}
 
 }

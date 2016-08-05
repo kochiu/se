@@ -1,13 +1,12 @@
 package com.kochiu.se.dataaccess.mysql.client;
 
+import com.kochiu.se.common.exception.SystemException;
 import org.apache.ibatis.builder.BuilderException;
 import org.apache.ibatis.plugin.Interceptor;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.TypeAliasRegistry;
 import org.mybatis.spring.SqlSessionFactoryBean;
-
-import com.kochiu.se.common.exception.SystemException;
 
 public class InterceptorUtil {
 

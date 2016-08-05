@@ -35,17 +35,21 @@ public class RedisSerializer {
 	}
 
 	/**
-	 * 使用指定序列化器序列化
+	 * 使用指定序列化器序列化(redisSerializer为空则用默认序列化器序列化)
 	 * 
 	 * @param obj
 	 * @param redisSerializer
 	 * @return
 	 */
 	public static byte[] serialize(Object obj, org.springframework.data.redis.serializer.RedisSerializer<Object> redisSerializer) {
-		if (obj instanceof String) {
-			return (obj == null ? null : ((String) obj).getBytes(getDefaultCharset()));
+		if (redisSerializer == null) {
+			return serialize(obj);
 		} else {
-			return redisSerializer.serialize(obj);
+			if (obj instanceof String) {
+				return (obj == null ? null : ((String) obj).getBytes(getDefaultCharset()));
+			} else {
+				return redisSerializer.serialize(obj);
+			}
 		}
 	}
 
@@ -85,7 +89,7 @@ public class RedisSerializer {
 	}
 
 	/**
-	 * 使用指定序列化器反序列化
+	 * 使用指定序列化器反序列化(redisSerializer为空则用默认序列化器反序列化)
 	 * 
 	 * @param type
 	 * @param bytes
@@ -93,16 +97,22 @@ public class RedisSerializer {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T deserialize(Class<T> type, byte[] bytes, org.springframework.data.redis.serializer.RedisSerializer<Object> redisSerializer) {
-		if (type == String.class) {
-			return (T) (bytes == null ? null : new String(bytes, getDefaultCharset()));
+		if (redisSerializer == null) {
+			return deserialize(type, bytes);
 		} else {
-			if (bytes == null) {
-				return null;
+			if (type == String.class) {
+				return (T) (bytes == null ? null : new String(bytes, getDefaultCharset()));
 			} else {
-				return (T) redisSerializer.deserialize(bytes);
+				if (bytes == null) {
+					return null;
+				} else {
+					return (T) redisSerializer.deserialize(bytes);
+				}
 			}
 		}
+
 	}
+
 	private static Charset getDefaultCharset() {
 		Charset charset = Charset.forName(DEFAULT_CODE);
 		return charset;
@@ -115,7 +125,7 @@ public class RedisSerializer {
 			JSONSerializer serializer = new JSONSerializer(out);
 			serializer.getPropertyFilters().add(filter);
 
-			for (com.alibaba.fastjson.serializer.SerializerFeature feature : features) {
+			for (SerializerFeature feature : features) {
 				serializer.config(feature, true);
 			}
 

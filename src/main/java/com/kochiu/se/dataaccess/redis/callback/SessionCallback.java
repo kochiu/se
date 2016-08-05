@@ -4,5 +4,4 @@ public abstract class SessionCallback<T> implements org.springframework.data.red
 
 	public abstract String getKey();
 	
-	
 }

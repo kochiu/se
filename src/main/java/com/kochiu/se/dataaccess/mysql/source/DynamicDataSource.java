@@ -1,5 +1,6 @@
 package com.kochiu.se.dataaccess.mysql.source;
 
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,13 +12,6 @@ import java.util.Set;
 import javax.sql.DataSource;
 
 import com.kochiu.se.common.exception.SystemException;
-import com.kochiu.se.common.util.ConsistenHashUtil;
-import com.kochiu.se.core.context.SpringContextHolder;
-import com.kochiu.se.dataaccess.mysql.client.InterceptorUtil;
-import com.kochiu.se.dataaccess.mysql.ddl.DdlConfig;
-import com.kochiu.se.dataaccess.mysql.ddl.DdlDb;
-import com.kochiu.se.dataaccess.mysql.ddl.DdlTable;
-import com.kochiu.se.dataaccess.mysql.ddl.interceptor.DdlInterceptor;
 import com.kochiu.se.dataaccess.mysql.source.interceptor.SqlLogInterceptor;
 import org.apache.commons.lang.StringUtils;
 import org.dom4j.Document;
@@ -25,6 +19,14 @@ import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
+
+import com.kochiu.se.common.util.ConsistenHashUtil;
+import com.kochiu.se.core.context.SpringContextHolder;
+import com.kochiu.se.dataaccess.mysql.client.InterceptorUtil;
+import com.kochiu.se.dataaccess.mysql.ddl.DdlConfig;
+import com.kochiu.se.dataaccess.mysql.ddl.DdlDb;
+import com.kochiu.se.dataaccess.mysql.ddl.DdlTable;
+import com.kochiu.se.dataaccess.mysql.ddl.interceptor.DdlInterceptor;
 
 /**
  * 动态数据源
@@ -63,6 +65,13 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
 	 * 日志开关，默认为false不打开
 	 */
 	private boolean openLog;
+
+	/**
+	 * 日志最大长度，如果不传则默认1000，传-1则不限制日志打印长度
+	 */
+	private int logLength;
+
+	private String ignorePattern;
 
 	private long slowLimit = 1000l;
 
@@ -104,6 +113,14 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
 
 	public void setOpenLog(boolean openLog) {
 		this.openLog = openLog;
+	}
+
+	public void setLogLength(int logLength) {
+		this.logLength = logLength;
+	}
+
+	public void setIgnorePattern(String ignorePattern) {
+		this.ignorePattern = ignorePattern;
 	}
 
 	public void setSlowLimit(long slowLimit) {
@@ -185,6 +202,8 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
 		if (openLog) {
 			SqlLogInterceptor.setOpenLog(openLog);
 			SqlLogInterceptor.setSlowLimit(slowLimit);
+			SqlLogInterceptor.setLogLength(logLength);
+			SqlLogInterceptor.setIgnorePattern(ignorePattern);
 			InterceptorUtil.setSqlSessionFactoryBean(SpringContextHolder.applicationContext.getBean(SqlSessionFactoryBean.class));
 			InterceptorUtil.dynamicAddInterceptor(SQL_LOG_CLASS);
 		}
@@ -208,7 +227,15 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
 
 				if (url != null) {
 					SAXReader saxReader = new SAXReader();
-					Document document = saxReader.read(url);
+					Document document = null;
+
+					if (isJarUrl(url)) {
+						InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(ddlFile);
+						document = saxReader.read(is);
+					} else {
+						document = saxReader.read(url);
+					}
+
 					Element root = document.getRootElement();
 					Element tables = root.element("tables");
 					List<?> nodes = tables.elements("table");
@@ -261,6 +288,14 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
 			} catch (Exception e) {
 				throw new SystemException("InitDdlConfig error", e);
 			}
+		}
+	}
+
+	private boolean isJarUrl(URL url) {
+		if (url.toString().indexOf("jar:file") != -1 || url.toString().indexOf("jar!") != -1) {
+			return true;
+		} else {
+			return false;
 		}
 	}
 

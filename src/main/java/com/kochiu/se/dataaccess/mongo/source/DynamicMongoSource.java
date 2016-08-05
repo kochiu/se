@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.kochiu.se.common.exception.SystemException;
+import com.kochiu.se.dataaccess.mongo.config.PageQuery;
 import com.kochiu.se.dataaccess.mongo.template.MongoTemplateProxy;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.data.domain.Sort;
@@ -15,8 +17,6 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.util.Assert;
 
 import com.mongodb.WriteResult;
-import com.kochiu.se.common.exception.SystemException;
-import com.kochiu.se.dataaccess.mongo.config.PageQuery;
 
 /**
  * 动态mongodb
@@ -50,7 +50,7 @@ public class DynamicMongoSource {
 	public void afterPropertiesSet() {
 		Set<Entry<String, MongoTemplateProxy>> set = targetMongoSources.entrySet();
 
-		for (Map.Entry<String, MongoTemplateProxy> entry : set) {
+		for (Entry<String, MongoTemplateProxy> entry : set) {
 			MongoTemplateProxy mongoTemplateProxy = entry.getValue();
 			MongoTemplate mongoTemplate = mongoTemplateProxy.getMongoTemplate();
 			Assert.notNull(mongoTemplate, " a valid mongod db is required");

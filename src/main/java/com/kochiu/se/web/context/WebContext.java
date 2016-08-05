@@ -3,9 +3,6 @@ package com.kochiu.se.web.context;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-
 public class WebContext {
 
 	private static final ThreadLocal<Object[]> WEBCONTEXT_LOCAL = new ThreadLocal<Object[]>();
@@ -18,15 +15,6 @@ public class WebContext {
 	public static HttpServletRequest currentRequest() {
 		Object[] locals = (Object[]) WEBCONTEXT_LOCAL.get();
 		return locals == null ? null : (HttpServletRequest) locals[0];
-	}
-
-	/**
-	 * 得到当前request(spring进入controller之前的HttpServletRequest)
-	 * @return
-	 */
-	public static HttpServletRequest getHttpServletRequest() {
-		HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-		return request;
 	}
 
 	/**

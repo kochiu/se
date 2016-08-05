@@ -10,6 +10,13 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.kochiu.se.common.exception.SystemException;
+import com.kochiu.se.common.util.ConsistenHashUtil;
+import com.kochiu.se.common.util.StringUtil;
+import com.kochiu.se.dataaccess.mysql.ddl.DdlConfig;
+import com.kochiu.se.dataaccess.mysql.ddl.DdlDb;
+import com.kochiu.se.dataaccess.mysql.ddl.TableNameFinder;
+import com.kochiu.se.dataaccess.mysql.source.DataSourceSwitcher;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.expression.operators.relational.ItemsList;
@@ -30,14 +37,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.kochiu.se.common.exception.SystemException;
-import com.kochiu.se.common.util.ConsistenHashUtil;
-import com.kochiu.se.common.util.StringUtil;
-import com.kochiu.se.dataaccess.mysql.ddl.DdlConfig;
-import com.kochiu.se.dataaccess.mysql.ddl.DdlDb;
 import com.kochiu.se.dataaccess.mysql.ddl.DdlTable;
-import com.kochiu.se.dataaccess.mysql.ddl.TableNameFinder;
-import com.kochiu.se.dataaccess.mysql.source.DataSourceSwitcher;
 
 /**
  * 

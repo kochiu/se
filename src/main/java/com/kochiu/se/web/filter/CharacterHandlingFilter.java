@@ -18,6 +18,8 @@ import com.kochiu.se.common.util.BCConvertUtil;
 import com.kochiu.se.web.context.WebContext;
 import org.springframework.web.filter.CharacterEncodingFilter;
 
+import com.kochiu.se.common.util.StringUtil;
+
 /**
  * HTTP请求的字符处理器，包括字符全角转半角，去掉字符串前后的空格等
  * 
@@ -25,6 +27,10 @@ import org.springframework.web.filter.CharacterEncodingFilter;
  * 
  */
 public class CharacterHandlingFilter extends CharacterEncodingFilter {
+
+	private final static String DEFAULT_ENCODING = "UTF-8";
+
+	private final static String ISO_ENCODING = "ISO-8859-1";
 
 	private String encoding;
 
@@ -42,28 +48,28 @@ public class CharacterHandlingFilter extends CharacterEncodingFilter {
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 		if (this.encoding != null && (this.forceEncoding || request.getCharacterEncoding() == null)) {
 			request.setCharacterEncoding(this.encoding);
-			
+
 			if (this.forceEncoding) {
 				response.setCharacterEncoding(this.encoding);
 			}
 		}
 
-		String parameterEncoding = (this.encoding == null) ? "UTF-8" : this.encoding;
-		ParameterRequestWrapper wrapRequest = new ParameterRequestWrapper(request, request.getParameterMap(), parameterEncoding);
-		WebContext.registry(wrapRequest, response);
-		filterChain.doFilter(wrapRequest, response);
+		String parameterEncoding = (this.encoding == null) ? DEFAULT_ENCODING : this.encoding;
+		RequestWrapper requestWrapper = new RequestWrapper(request, request.getParameterMap(), parameterEncoding);
+		WebContext.registry(requestWrapper, response);
+		filterChain.doFilter(requestWrapper, response);
 	}
 
-	public class ParameterRequestWrapper extends HttpServletRequestWrapper {
+	public class RequestWrapper extends HttpServletRequestWrapper {
 
 		private Map<String, String[]> params;
 
 		private String encoding;
 
-		public ParameterRequestWrapper(HttpServletRequest request, Map<String, String[]> parameterMap, String encoding) {
+		public RequestWrapper(HttpServletRequest request, Map<String, String[]> parameterMap, String encoding) {
 			super(request);
 			this.encoding = encoding;
-			handle(request, parameterMap);
+			handleRequest(request, parameterMap);
 		}
 
 		@Override
@@ -112,7 +118,7 @@ public class CharacterHandlingFilter extends CharacterEncodingFilter {
 			}
 		}
 
-		private void handle(HttpServletRequest request, Map<String, String[]> parameterMap) {
+		private void handleRequest(HttpServletRequest request, Map<String, String[]> parameterMap) {
 			params = new HashMap<String, String[]>(parameterMap);
 			Iterator<Entry<String, String[]>> iterator = params.entrySet().iterator();
 
@@ -125,18 +131,20 @@ public class CharacterHandlingFilter extends CharacterEncodingFilter {
 					params.put(key, value);
 				} else {
 					String[] valueArray = (String[]) value;
-					
+
 					for (int i = 0; i < valueArray.length; i++) {
 						String valueStr = valueArray[i];
 
-						if (valueStr != null && !"".equals(valueStr)) {
+						if (StringUtil.isNotEmpty(valueStr)) {
 							String newValue = (String) valueStr;
+
 							try {
-								if (newValue.equals(new String(newValue.getBytes("ISO-8859-1"), "ISO-8859-1"))) {
-									newValue = new String(newValue.getBytes("ISO-8859-1"), this.encoding);
+								if (newValue.equals(new String(newValue.getBytes(ISO_ENCODING), ISO_ENCODING))) {
+									newValue = new String(newValue.getBytes(ISO_ENCODING), this.encoding);
 								}
 							} catch (Exception e) {
 							}
+
 							newValue = BCConvertUtil.qjTobj(newValue).trim();
 							valueArray[i] = newValue;
 						}

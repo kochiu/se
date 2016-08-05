@@ -7,15 +7,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.RedisSerializer;
-
 import com.kochiu.se.common.exception.SystemException;
 import com.kochiu.se.common.util.ConsistenHashUtil;
 import com.kochiu.se.dataaccess.redis.callback.RedisCallback;
 import com.kochiu.se.dataaccess.redis.callback.SessionCallback;
 import com.kochiu.se.dataaccess.redis.template.RedisTemplateProxy;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.RedisSerializer;
 
 /**
  * 动态redis
@@ -130,7 +129,7 @@ public class DynamicRedisSource {
 	public void afterPropertiesSet() {
 		Set<Entry<String, RedisTemplateProxy>> set = targetRedisSources.entrySet();
 
-		for (Map.Entry<String, RedisTemplateProxy> entry : set) {
+		for (Entry<String, RedisTemplateProxy> entry : set) {
 			String key = entry.getKey();
 			RedisTemplateProxy redisTemplateProxy = entry.getValue();
 			List<RedisTemplate<Serializable, Serializable>> redisTemplateList = redisTemplateProxy.getRedisTemplateList();

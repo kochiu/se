@@ -31,7 +31,7 @@ public class ContextConstants {
     /**
      * 对导出列的描述，一般为key/value对象的数组的json串
      */
-    public static final String EXPORT_COLUMN = "exportColumn";
+    public static final String EXPORT_FIELD = "exportField";
     /**
      * 需要导出的数据的key,该值需要保存在request对象中，以使拦截器可以获取到该值
      */

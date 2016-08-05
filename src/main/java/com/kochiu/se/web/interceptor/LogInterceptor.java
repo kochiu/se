@@ -9,15 +9,12 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.kochiu.se.common.domain.ContextConstants;
 import com.kochiu.se.common.domain.Result;
 import com.kochiu.se.common.util.CommonUtil;
-import com.kochiu.se.common.util.date.DateUtil;
 import com.kochiu.se.common.util.http.URLUtil;
 import com.kochiu.se.core.session.config.SessionConfig;
 import com.kochiu.se.web.domain.HttpLog;
 import com.kochiu.se.web.domain.RequestLog;
-import com.kochiu.se.web.domain.ResponseLog;
 import org.jsoup.helper.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +25,9 @@ import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.kochiu.se.common.domain.ContextConstants;
+import com.kochiu.se.common.util.date.DateUtil;
+import com.kochiu.se.web.domain.ResponseLog;
 
 /**
  * 
@@ -49,11 +49,20 @@ public class LogInterceptor extends HandlerInterceptorAdapter {
 	 */
 	private boolean openLog;
 
+	/**
+	 * 日志最大长度，如果不传则默认1000，传-1则不限制日志打印长度
+	 */
+	private int logLength;
+
 	@Autowired(required = false)
 	private SessionConfig sessionConfig;
 
 	public void setOpenLog(boolean openLog) {
 		this.openLog = openLog;
+	}
+
+	public void setLogLength(int logLength) {
+		this.logLength = logLength;
 	}
 
 	@Override
@@ -111,9 +120,10 @@ public class LogInterceptor extends HandlerInterceptorAdapter {
 				long cost = end.getTime() - start.getTime();
 				HttpLog httpLog = new HttpLog(requestLog, responseLog, cost + "ms");
 				String log = getHttpLog(httpLog);
+				int logLength = this.logLength != 0 ? this.logLength : ContextConstants.LOG_MAX_LENGTH;
 
-				if (log.length() > ContextConstants.LOG_MAX_LENGTH) {
-					log = log.substring(0, ContextConstants.LOG_MAX_LENGTH);
+				if (logLength != -1 && log.length() > logLength) {
+					log = log.substring(0, logLength);
 				}
 
 				LOG.info(log);
@@ -124,7 +134,8 @@ public class LogInterceptor extends HandlerInterceptorAdapter {
 	}
 
 	private String getHttpLog(HttpLog httpLog) {
-		String log = "[HttpLog] " + JSON.toJSONStringWithDateFormat(httpLog, DateUtil.MAX_LONG_DATE_FORMAT_STR, SerializerFeature.DisableCircularReferenceDetect);
+		String log = "[HttpLog] "
+				+ JSON.toJSONStringWithDateFormat(httpLog, DateUtil.MAX_LONG_DATE_FORMAT_STR, SerializerFeature.DisableCircularReferenceDetect);
 		return log;
 	}
 

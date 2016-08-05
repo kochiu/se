@@ -151,4 +151,10 @@ public class FileUtil {
 		dirFile.delete();
 		return true;
 	}
+
+	public static void main(String[] args) {
+		String file = "e:\\测试C.xls";
+		String suffix = FileUtil.getFileSuffix(file);
+		System.out.println("suffix=" + suffix);
+	}
 }

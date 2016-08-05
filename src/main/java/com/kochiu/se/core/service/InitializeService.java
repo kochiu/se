@@ -2,22 +2,16 @@ package com.kochiu.se.core.service;
 
 import com.kochiu.se.core.mq.source.DynamicCreateMqListenerManager;
 import com.kochiu.se.core.mq.source.DynamicCreateMqProducerManager;
-import com.kochiu.se.core.mq.source.MqMessageSenderSwitcher;
-import com.kochiu.se.core.quartz.source.QuartzSwitcher;
-import com.kochiu.se.core.tbschedule.source.ScheduleSwitcher;
-import com.kochiu.se.dataaccess.hbase.source.DynamicCreateHbaseSourceManager;
-import com.kochiu.se.dataaccess.memcache.source.DynamicCreateMemcacheSourceManager;
-import com.kochiu.se.rpc.dubbo.source.DynamicCreateDubboClientManager;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.stereotype.Service;
-
 import com.kochiu.se.core.mq.source.DynamicMqListenerContainer;
+import com.kochiu.se.core.mq.source.MqMessageSenderSwitcher;
 import com.kochiu.se.core.quartz.source.DynamicCreateQuartzManager;
+import com.kochiu.se.core.quartz.source.QuartzSwitcher;
 import com.kochiu.se.core.tbschedule.source.DynamicCreateScheduleManager;
+import com.kochiu.se.core.tbschedule.source.ScheduleSwitcher;
 import com.kochiu.se.dataaccess.fastdfs.source.DynamicCreateFastdfsSourceManager;
+import com.kochiu.se.dataaccess.hbase.source.DynamicCreateHbaseSourceManager;
 import com.kochiu.se.dataaccess.hbase.source.HbaseSourceSwitcher;
+import com.kochiu.se.dataaccess.memcache.source.DynamicCreateMemcacheSourceManager;
 import com.kochiu.se.dataaccess.memcache.source.MemcacheSourceSwitcher;
 import com.kochiu.se.dataaccess.mongo.source.DynamicCreateMongoSourceManager;
 import com.kochiu.se.dataaccess.mongo.source.MongoSourceSwitcher;
@@ -26,7 +20,12 @@ import com.kochiu.se.dataaccess.mysql.source.DynamicCreateDataSourceManager;
 import com.kochiu.se.dataaccess.redis.source.DynamicCreateRedisSourceManager;
 import com.kochiu.se.dataaccess.redis.source.RedisSourceSwitcher;
 import com.kochiu.se.rpc.dubbo.source.DubboClientSwitcher;
+import com.kochiu.se.rpc.dubbo.source.DynamicCreateDubboClientManager;
 import com.kochiu.se.rpc.dubbo.source.DynamicCreateDubboProviderManager;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.stereotype.Service;
 
 @Service("seInitializeService")
 public class InitializeService implements ApplicationListener<ContextRefreshedEvent> {

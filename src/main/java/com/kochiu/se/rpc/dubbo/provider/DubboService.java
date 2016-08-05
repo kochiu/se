@@ -36,9 +36,14 @@ public class DubboService {
 	private String protocols = "dubbo:20880";
 
 	/**
-	 * 服务提供超时时间，默认3秒
+	 * 服务提供超时时间，默认30秒
 	 */
 	private int timeout = 30000;
+
+	/**
+	 * 服务提供的重试次数，超时或未响应都会触发吗，默认加上第一次一共3次(如果不需要重试请设为0)
+	 */
+	private int retries = 2;
 
 	/**
 	 * 注册配置中心
@@ -113,10 +118,18 @@ public class DubboService {
 		this.timeout = timeout;
 	}
 
+	public int getRetries() {
+		return retries;
+	}
+
+	public void setRetries(int retries) {
+		this.retries = retries;
+	}
+
 	@Override
 	public String toString() {
 		return "DubboService [interfaceName=" + interfaceName + ", interfaceRef=" + interfaceRef + ", version=" + version + ", owner=" + owner + ", protocols="
-				+ protocols + ", timeout=" + timeout + ", dubboConfigServer=" + dubboConfigServer + "]";
+				+ protocols + ", timeout=" + timeout + ", retries=" + retries + ", dubboConfigServer=" + dubboConfigServer + "]";
 	}
 
 }

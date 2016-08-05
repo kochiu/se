@@ -1,20 +1,19 @@
 package com.kochiu.se.core.tbschedule.source;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
 import com.kochiu.se.common.exception.SystemException;
-import com.kochiu.se.core.context.SpringContextHolder;
-import com.kochiu.se.core.tbschedule.task.InitialTask;
+import com.kochiu.se.core.tbschedule.config.ScheduleParameter;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kochiu.se.core.context.SpringContextHolder;
 import com.kochiu.se.core.tbschedule.config.ScheduleConfigServer;
-import com.kochiu.se.core.tbschedule.config.ScheduleParameter;
+import com.kochiu.se.core.tbschedule.task.BaseTask;
 import com.taobao.pamirs.schedule.strategy.ScheduleStrategy;
 import com.taobao.pamirs.schedule.strategy.TBScheduleManagerFactory;
 import com.taobao.pamirs.schedule.taskmanager.ScheduleTaskType;
@@ -23,36 +22,61 @@ public class DynamicSchedule {
 
 	private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-	private Map<String, ScheduleConfigServer> targetScheduleConfigServerMap;
+	private final static String SCHEDULE_ROOT = "/tbschedule";
 
-	private List<InitialTask> initialTaskList;
+	private final static String SCHEDULE_MANAGER_NAME = SCHEDULE_ROOT + "/" + "workerMonitorScheduler";
+
+	private final static String SCHEDULE_SUFFIX = "Scheduler";
+
+	private Map<String, ScheduleConfigServer> targetScheduleConfigServerMap;
 
 	private ScheduleConfigServer defaultTargetScheduleSource;
 
+	private Map<String, TBScheduleManagerFactory> initedScheduleManagerFactoryMap = new HashMap<String, TBScheduleManagerFactory>();
+
+	private String hostRootPath;
+
+	/**
+	 * 日志开关，默认为false不打开
+	 */
+	private boolean openLog;
+
+	/**
+	 * 日志最大长度，如果不传则默认1000，传-1则不限制日志打印长度
+	 */
+	private int logLength;
+
 	public void setTargetScheduleConfigServerMap(Map<String, ScheduleConfigServer> targetScheduleConfigServerMap) {
 		this.targetScheduleConfigServerMap = targetScheduleConfigServerMap;
-	}
-
-	public void setInitialTaskList(List<InitialTask> initialTaskList) {
-		this.initialTaskList = initialTaskList;
 	}
 
 	public void setDefaultTargetScheduleSource(ScheduleConfigServer defaultTargetScheduleSource) {
 		this.defaultTargetScheduleSource = defaultTargetScheduleSource;
 	}
 
+	public void setOpenLog(boolean openLog) {
+		this.openLog = openLog;
+	}
+
+	public void setLogLength(int logLength) {
+		this.logLength = logLength;
+	}
+
 	public void afterPropertiesSet() throws Exception {
 		Set<Entry<String, ScheduleConfigServer>> set = targetScheduleConfigServerMap.entrySet();
 
-		for (Map.Entry<String, ScheduleConfigServer> entry : set) {
+		for (Entry<String, ScheduleConfigServer> entry : set) {
+			String configServerKey = entry.getKey();
 			ScheduleConfigServer scheduleConfigServer = entry.getValue();
 
 			if (scheduleConfigServer != null) {
 				TBScheduleManagerFactory scheduleManagerFactory = new TBScheduleManagerFactory();
 				scheduleManagerFactory.setApplicationContext(SpringContextHolder.applicationContext);
 				Map<String, String> zkConfig = new HashMap<String, String>();
+				String rootPath = SCHEDULE_ROOT + "/" + scheduleConfigServer.getApplicationName() + SCHEDULE_SUFFIX;
+				hostRootPath = configServerKey + ":" + rootPath;
 				zkConfig.put("zkConnectString", scheduleConfigServer.getServerAddress());
-				zkConfig.put("rootPath", "/tbschedule/" + scheduleConfigServer.getApplicationName());
+				zkConfig.put("rootPath", rootPath);
 				zkConfig.put("userName", scheduleConfigServer.getUsername());
 				zkConfig.put("password", scheduleConfigServer.getPassword());
 				zkConfig.put("zkSessionTimeout", String.valueOf(scheduleConfigServer.getTimeout()));
@@ -61,24 +85,15 @@ public class DynamicSchedule {
 				scheduleConfigServer.setScheduleManagerFactory(scheduleManagerFactory);
 
 				if (scheduleConfigServer.getAutoStartup()) {
-					startSchedule(scheduleConfigServer);
+					startSchedule(rootPath, scheduleConfigServer);
 				}
 			}
 		}
+	}
 
-		for (InitialTask initialTask : initialTaskList) {
-			ScheduleConfigServer scheduleConfigServer = initialTask.getScheduleConfigServer();
-
-			if (scheduleConfigServer == null) {
-				scheduleConfigServer = defaultTargetScheduleSource;
-			}
-
-			if (scheduleConfigServer.getAutoStartup()) {
-				String configServerKey = scheduleConfigServer.getConfigServerKey();
-				ScheduleParameter config = initialTask.getScheduleParameter();
-				saveOrUpdateTask(config, configServerKey);
-			}
-		}
+	public void initTbScheduleLog() {
+		BaseTask.setOpenLog(openLog);
+		BaseTask.setLogLength(logLength);
 	}
 
 	/**
@@ -87,6 +102,8 @@ public class DynamicSchedule {
 	 * @return
 	 */
 	public TBScheduleManagerFactory getScheduleManagerFactory(String configServerKey) {
+		vailPermission(configServerKey);
+
 		if (configServerKey == null) {
 			configServerKey = ScheduleSwitcher.getScheduleType();
 		}
@@ -121,9 +138,10 @@ public class DynamicSchedule {
 	 * @param config
 	 * @param configServerKey
 	 */
-	public void saveOrUpdateTask(ScheduleParameter config, String configServerKey) {
+	public void saveOrUpdateTask(String scheduleName, ScheduleParameter config, String configServerKey) {
 		try {
 			TBScheduleManagerFactory scheduleManagerFactory = getScheduleManagerFactory(configServerKey);
+			initSchedule(scheduleName, scheduleManagerFactory);
 			// 创建任务的task信息
 			ScheduleTaskType baseTaskType = new ScheduleTaskType();
 			String baseTaskTypeName = config.getTaskName();
@@ -172,6 +190,11 @@ public class DynamicSchedule {
 			strategy.setSts(config.getStatus());
 			String[] ips = config.getIpList().toArray(new String[0]);
 			strategy.setIPList(ips);
+
+			if (!scheduleManagerFactory.isZookeeperInitialSucess()) {
+				String rootPath = scheduleManagerFactory.getZkConfig().get("rootPath");
+				throw new SystemException("ScheduleManagerFactory " + rootPath + " Zookeeper initial fail!");
+			}
 
 			scheduleManagerFactory.getScheduleDataManager().updateBaseTaskType(baseTaskType);
 			scheduleManagerFactory.getScheduleStrategyManager().updateScheduleStrategy(strategy);
@@ -232,20 +255,101 @@ public class DynamicSchedule {
 
 	/**
 	 * 
+	 * @param rootPath
 	 * @param scheduleConfigServer
 	 * @throws Exception
 	 */
-	private void startSchedule(ScheduleConfigServer scheduleConfigServer) throws Exception {
+	private void startSchedule(String rootPath, ScheduleConfigServer scheduleConfigServer) throws Exception {
 		TBScheduleManagerFactory scheduleManagerFactory = scheduleConfigServer.getScheduleManagerFactory();
+		boolean flag = false;
+		int num = 0;
 		scheduleManagerFactory.init();
-		
-		while (scheduleManagerFactory.isZookeeperInitialSucess() == false) {
-			log.error("ZookeeperInitial fail ...");
+
+		while (true) {
+			if (scheduleManagerFactory.isZookeeperInitialSucess()) {
+				flag = true;
+				break;
+			}
+
+			if (num >= 30) {
+				flag = false;
+				log.error("ZookeeperInitial fail ...");
+				break;
+			}
+
+			num++;
 			Thread.sleep(1000);
 		}
 
 		Thread.sleep(1000);
-		log.info("TBSchedule [" + scheduleConfigServer.getConfigServerKey() + "] 自动启动");
+		initedScheduleManagerFactoryMap.put(rootPath, scheduleManagerFactory);
+
+		if (flag) {
+			log.info("TBSchedule [" + scheduleConfigServer.getConfigServerKey() + " " + rootPath + "] 自动启动");
+		} else {
+			String exceptionMessage = "TBSchedule [" + scheduleConfigServer.getConfigServerKey() + " " + rootPath + "] 启动失败";
+			throw new SystemException(exceptionMessage);
+		}
 	}
 
+	/**
+	 * 
+	 * @param scheduleManagerFactory
+	 * @return
+	 * @throws Exception
+	 */
+	private void initSchedule(String scheduleName, TBScheduleManagerFactory scheduleManagerFactory) throws Exception {
+		Map<String, String> zkConfig = scheduleManagerFactory.getZkConfig();
+		String newRootPath = SCHEDULE_ROOT + "/" + scheduleName;
+		TBScheduleManagerFactory initedScheduleManagerFactory = initedScheduleManagerFactoryMap.get(newRootPath);
+		boolean flag = false;
+
+		if (initedScheduleManagerFactory == null) {
+			zkConfig.put("rootPath", newRootPath);
+			scheduleManagerFactory.setZkConfig(zkConfig);
+			int num = 0;
+			scheduleManagerFactory.initWithoutTimer();
+
+			while (true) {
+				if (scheduleManagerFactory.isZookeeperInitialSucess()) {
+					flag = true;
+					break;
+				}
+
+				if (num >= 30) {
+					flag = false;
+					log.error("Zookeeper initial fail ...");
+					break;
+				}
+
+				num++;
+				Thread.sleep(1000);
+			}
+
+			Thread.sleep(1000);
+			initedScheduleManagerFactoryMap.put(newRootPath, scheduleManagerFactory);
+		} else {
+			flag = true;
+		}
+
+		if (!flag) {
+			throw new SystemException("ScheduleManagerFactory " + newRootPath + " initial fail!");
+		}
+	}
+
+	private void vailPermission(String configServerKey) {
+		if (configServerKey == null) {
+			configServerKey = ScheduleSwitcher.getScheduleType();
+		}
+
+		if (configServerKey == null) {
+			configServerKey = defaultTargetScheduleSource.getConfigServerKey();
+		}
+
+		String managerRootPath = configServerKey + ":" + SCHEDULE_MANAGER_NAME;
+
+		if (hostRootPath == null || !hostRootPath.equals(managerRootPath)) {
+			throw new SystemException("Have no permission to operate!");
+		}
+	}
 }

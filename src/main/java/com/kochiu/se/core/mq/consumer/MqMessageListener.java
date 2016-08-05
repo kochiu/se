@@ -25,8 +25,14 @@ public abstract class MqMessageListener implements MessageListener {
 
 	private static boolean openLog;
 	
+	private static int logLength;
+	
 	public static void setOpenLog(boolean openLog) {
 		MqMessageListener.openLog = openLog;
+	}
+	
+	public static void setLogLength(int logLength) {
+		MqMessageListener.logLength = logLength;
 	}
 	
 	public abstract Object handleMessage(String messageId, String messageContent, String queue);
@@ -59,11 +65,12 @@ public abstract class MqMessageListener implements MessageListener {
 				endTime = (endTime == 0 ? System.currentTimeMillis() : endTime);
 				// 打印日志
 				String messageLog = getMessageLog(messageId, messageContent, queue, mqResult, startTime, endTime);
+				int logLength = MqMessageListener.logLength != 0 ? MqMessageListener.logLength : ContextConstants.LOG_MAX_LENGTH;
 
-				if (messageLog.length() > ContextConstants.LOG_MAX_LENGTH) {
-					messageLog = messageLog.substring(0, ContextConstants.LOG_MAX_LENGTH);
+				if (logLength != -1 && messageLog.length() > logLength) {
+					messageLog = messageLog.substring(0, logLength);
 				}
-
+				
 				log.info(messageLog);
 			}
 		} else {

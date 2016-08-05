@@ -10,8 +10,8 @@
  */
 package com.kochiu.se.core.session.persistence;
 
-import com.kochiu.se.common.util.session.HttpSessionProxy;
 import com.kochiu.se.core.session.config.SessionConfig;
+import com.kochiu.se.common.util.session.HttpSessionProxy;
 
 /**
  * @author zhihongp

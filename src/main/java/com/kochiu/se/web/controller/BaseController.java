@@ -9,6 +9,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -18,23 +19,28 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.kochiu.se.common.domain.Result;
-import com.kochiu.se.common.util.StringUtil;
-import com.kochiu.se.common.util.date.DateUtil;
-import com.kochiu.se.common.util.poi.CellDefine;
-import com.kochiu.se.common.util.poi.ExcelExport;
+import com.kochiu.se.common.domain.ResultCode;
+import com.kochiu.se.common.exception.SystemException;
 import com.kochiu.se.dataaccess.mysql.config.PageQuery;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.kochiu.se.common.domain.ContextConstants;
-import com.kochiu.se.common.domain.ResultCode;
-import com.kochiu.se.common.exception.SystemException;
+import com.kochiu.se.common.util.StringUtil;
+import com.kochiu.se.common.util.date.DateUtil;
+import com.kochiu.se.common.util.poi.CellDefine;
+import com.kochiu.se.common.util.poi.ExcelExport;
+import com.kochiu.se.common.util.poi.ExcelFieldDefinition;
+import com.kochiu.se.common.util.poi.ExcelResult;
+import com.kochiu.se.common.util.poi.ExcelUtil;
 
 /**
  * 基础Controller
@@ -101,7 +107,6 @@ public abstract class BaseController {
 
 	protected Boolean getBooleanParameter(String name, Boolean defaultValue) {
 		String value = getHttpServletRequest().getParameter(name);
-
 		return StringUtils.isEmpty(value) ? defaultValue : Boolean.valueOf(value);
 	}
 
@@ -111,7 +116,6 @@ public abstract class BaseController {
 
 	protected Integer getIntegerParameter(String name, Integer defaultValue) {
 		String value = getHttpServletRequest().getParameter(name);
-
 		return StringUtils.isEmpty(value) ? defaultValue : Integer.valueOf(value);
 	}
 
@@ -121,7 +125,6 @@ public abstract class BaseController {
 
 	protected Long getLongParameter(String name, Long defaultValue) {
 		String value = getHttpServletRequest().getParameter(name);
-
 		return StringUtils.isEmpty(value) ? defaultValue : Long.valueOf(value);
 	}
 
@@ -131,7 +134,6 @@ public abstract class BaseController {
 
 	protected Float getFloatParameter(String name, Float defaultValue) {
 		String value = getHttpServletRequest().getParameter(name);
-
 		return StringUtils.isEmpty(value) ? defaultValue : Float.valueOf(value);
 	}
 
@@ -141,7 +143,6 @@ public abstract class BaseController {
 
 	protected Double getDoubleParameter(String name, Double defaultValue) {
 		String value = getHttpServletRequest().getParameter(name);
-
 		return StringUtils.isEmpty(value) ? defaultValue : Double.valueOf(value);
 	}
 
@@ -183,6 +184,11 @@ public abstract class BaseController {
 		}
 	}
 
+	protected MultipartFile getMultipartFile(HttpServletRequest request, String fileName) {
+		MultipartHttpServletRequest multipartRequest = (MultipartHttpServletRequest) request;
+		return multipartRequest.getFile(fileName);
+	}
+
 	protected PageQuery getPageQuery() {
 		Integer pageNo = getIntegerParameter("pageNo", 1);
 		Integer pageSize = getIntegerParameter("pageSize", 10);
@@ -194,9 +200,11 @@ public abstract class BaseController {
 	protected PageQuery getPageQueryNotNull() {
 		Integer pageNo = getIntegerParameter("pageNo");
 		Integer pageSize = getIntegerParameter("pageSize");
+
 		if (pageNo == null || pageSize == null) {
 			return null;
 		}
+
 		return new PageQuery(pageNo, pageSize);
 	}
 
@@ -204,15 +212,14 @@ public abstract class BaseController {
 		Integer pageSize = getIntegerParameter("iDisplayLength", 10);
 		Integer iDisplayStart = getIntegerParameter("iDisplayStart", 1);
 		Integer pageNo = iDisplayStart / pageSize + 1;
-
 		PageQuery page = new PageQuery(pageNo, pageSize);
-
 		return page;
 	}
 
 	protected void setOrderBy(PageQuery page) {
 		String orderBy = getStringParameter("order_by");
 		String orderType = getStringParameter("order_type");
+
 		if (!StringUtils.isBlank(orderBy)) {
 			page.setOrderBy(orderBy);
 			page.setOrderType(orderType);
@@ -225,6 +232,88 @@ public abstract class BaseController {
 
 	protected void setDataForExport(Object object) {
 		getHttpServletRequest().setAttribute(ContextConstants.EXPORT_DATA, object);
+	}
+
+	// /**
+	// * 导入excel
+	// * @param file
+	// * @param response
+	// * @return
+	// * @throws IOException
+	// */
+	// protected Workbook excelImport(MultipartFile file, HttpServletResponse
+	// response) throws IOException {
+	// String filePath = file.getOriginalFilename();
+	//
+	// return null;
+	// // if (defaultExcelTypeFlag) {
+	// // return ExcelUtil.importExcel(inputStream);
+	// // } else {
+	// // return ExcelUtil.importExcel(file, inputStream);
+	// // }
+	//
+	// }
+
+	/**
+	 * 导出excel
+	 * 
+	 * @param objects file 导出的数据
+	 * @param type 导出的数据类型
+	 * @param file 文件名
+	 * @param withHeader 是否导出报头
+	 * @param excelFieldDefinition 导出格式定义
+	 * @param beginRowNum 数据起始行号
+	 * @param response 导出流
+	 * @throws IOException
+	 * @throws IllegalAccessException
+	 * @throws IllegalArgumentException
+	 */
+	protected <T> ExcelResult excelExport(Collection<T> objects, Class<T> type, String file, boolean withHeader, String excelFieldDefinition, int beginRowNum,
+			HttpServletResponse response) throws IOException, IllegalArgumentException, IllegalAccessException {
+		List<ExcelFieldDefinition> fieldDefinitionList = getFieldDefines(excelFieldDefinition);
+		String fileName = URLEncoder.encode(file, "UTF-8");
+		response.setCharacterEncoding("UTF-8");
+		response.setContentType("application/x-msexcel");
+		response.setHeader("Content-type", "application/x-msexcel");
+		response.setHeader("content-disposition", "attachment;filename=" + fileName);
+		OutputStream outputStream = response.getOutputStream();
+		ExcelResult excelResult = null;
+
+		if (withHeader) {
+			excelResult = ExcelUtil.exportExcelWithHeader(objects, type, fileName, outputStream, fieldDefinitionList, beginRowNum);
+		} else {
+			excelResult = ExcelUtil.exportExcel(objects, type, fileName, outputStream, fieldDefinitionList, beginRowNum);
+		}
+
+		outputStream.flush();
+		return excelResult;
+	}
+
+	protected List<ExcelFieldDefinition> getFieldDefines(String excelFieldDefinitionStr) {
+		if (excelFieldDefinitionStr == null) {
+			return null;
+		}
+
+		JSONArray jsonArray = (JSONArray) JSON.parse(excelFieldDefinitionStr);
+		int size = jsonArray.size();
+
+		if (size == 0) {
+			return null;
+		}
+
+		List<ExcelFieldDefinition> fieldDefineList = new ArrayList<ExcelFieldDefinition>();
+
+		for (int i = 0; i < size; i++) {
+			JSONObject jsonObject = (JSONObject) jsonArray.get(i);
+			Set<Map.Entry<String, Object>> entrySet = jsonObject.entrySet();
+
+			for (Map.Entry<String, Object> entry : entrySet) {
+				ExcelFieldDefinition excelFieldDefinition = new ExcelFieldDefinition(Integer.valueOf(entry.getKey()), entry.getKey());
+				fieldDefineList.add(excelFieldDefinition);
+			}
+		}
+
+		return fieldDefineList;
 	}
 
 	protected void excelExport(String file, String cellDefineJson, Object exportObject, HttpServletResponse response) throws IOException {

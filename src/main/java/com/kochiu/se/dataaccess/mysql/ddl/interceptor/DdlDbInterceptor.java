@@ -9,6 +9,7 @@ import com.kochiu.se.common.util.ConsistenHashUtil;
 import com.kochiu.se.common.util.sql.SqlParserUtil;
 import com.kochiu.se.dataaccess.mysql.ddl.DdlConfig;
 import com.kochiu.se.dataaccess.mysql.ddl.DdlTable;
+import com.kochiu.se.dataaccess.mysql.source.DataSourceSwitcher;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.BoundSql;
@@ -21,8 +22,6 @@ import org.apache.ibatis.plugin.Plugin;
 import org.apache.ibatis.plugin.Signature;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
-
-import com.kochiu.se.dataaccess.mysql.source.DataSourceSwitcher;
 
 /**
  * 

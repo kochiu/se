@@ -14,6 +14,8 @@ public class ScheduleParameter {
 	public static String STATUS_PAUSE = "pause";
 	public static String TASKKIND_STATIC = "static";
 	public static String TASKKIND_DYNAMIC = "dynamic";
+	public static int SLEEP_MODEL = 0;
+	public static int NOTSLEEP_MODEL = 1;
 
 	/**
 	 * 任务名称(全局唯一标示)
@@ -26,37 +28,37 @@ public class ScheduleParameter {
 	private String taskBeanName;
 
 	/**
-	 * 心跳频率(毫秒)
+	 * 心跳频率(毫秒), 默认3秒
 	 */
-	private int heartBeatRate = 2000;
+	private int heartBeatRate = 3000;
 
 	/**
-	 * 假定服务死亡间隔(毫秒)
+	 * 假定服务死亡间隔(毫秒), 默认30秒
 	 */
-	private int judgeDeadInterval = 10000;
+	private int judgeDeadInterval = 30000;
 
 	/**
-	 * 线程数
+	 * 线程数, 默认10
 	 */
-	private int threadNumber = 5;
+	private int threadNumber = 10;
 
 	/**
-	 * 每次获取数据量
+	 * 每次获取数据量, 默认100
 	 */
 	private int fetchDataNumber = 100;
 
 	/**
-	 * 每次执行数量(只在批量任务才生效，单个任务每次执行一条)
+	 * 每次执行数量(只在批量任务才生效，单个任务每次执行一条), 默认和每次获取数据量一样，即100
 	 */
-	private int executeNumber = 1;
+	private int executeNumber = 100;
 
 	/**
-	 * 没有数据时休眠时长(毫秒)
+	 * 没有数据时休眠时长(毫秒), 默认1秒
 	 */
 	private int sleepTimeNoData = 1000;
 
 	/**
-	 * 每次处理完数据后休眠时间(毫秒)
+	 * 每次处理完数据后休眠时间(毫秒), 默认0秒
 	 */
 	private int sleepTimeInterval = 0;
 
@@ -81,7 +83,7 @@ public class ScheduleParameter {
 	private double expireOwnSignInterval = 1;
 
 	/**
-	 * 任务项列表
+	 * 任务项列表, 默认0到9共10项
 	 */
 	private List<String> taskItemList;
 
@@ -96,9 +98,9 @@ public class ScheduleParameter {
 	private String status = STATUS_RESUME;
 
 	/**
-	 * 处理模式(0-SLEEP, 1-NOTSLEEP)
+	 * 处理模式(0-SLEEP, 1-NOTSLEEP), 默认SLEEP模式
 	 */
-	private int processType = 0;
+	private int processType = SLEEP_MODEL;
 
 	/**
 	 * 策略名称(全局唯一标示)
@@ -106,17 +108,17 @@ public class ScheduleParameter {
 	private String strategyName;
 
 	/**
-	 * 策略类型(0-Schedule, 1-JAVA, 2-Bean)
+	 * 策略类型(0-Schedule, 1-JAVA, 2-Bean), 默认Schedule模式
 	 */
 	private int strategyType = 0;
 
 	/**
-	 * 单JVM最大线程组数量
+	 * 单JVM最大线程组数量, 默认1
 	 */
 	private int numOfSingleServer = 1;
 
 	/**
-	 * 最大线程组数量
+	 * 最大线程组数量, 默认10
 	 */
 	private int assignNum = 10;
 

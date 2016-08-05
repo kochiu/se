@@ -1,6 +1,8 @@
 package com.kochiu.se.dataaccess.mysql.source.interceptor;
 
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.BoundSql;
@@ -12,6 +14,7 @@ import org.apache.ibatis.plugin.Plugin;
 import org.apache.ibatis.plugin.Signature;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
+import org.jsoup.helper.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,16 +42,28 @@ public class SqlLogInterceptor implements Interceptor {
 
 	private static boolean openLog;
 
+	private static int logLength;
+
 	private static long slowLimit;
+	
+	private static String ignorePattern;
 
 	public static void setOpenLog(boolean openLog) {
 		SqlLogInterceptor.openLog = openLog;
+	}
+
+	public static void setLogLength(int logLength) {
+		SqlLogInterceptor.logLength = logLength;
 	}
 
 	public static void setSlowLimit(long slowLimit) {
 		SqlLogInterceptor.slowLimit = slowLimit;
 	}
 
+	public static void setIgnorePattern(String ignorePattern) {
+		SqlLogInterceptor.ignorePattern = ignorePattern;
+	}
+	
 	public static String getExecuteSql() {
 		String sql = (String) sqlLogContextHolder.get();
 		return sql;
@@ -89,20 +104,39 @@ public class SqlLogInterceptor implements Interceptor {
 				String sql = getSql(invocation, mappedStatement);
 				clearSqlLogContext();
 				String sqlId = mappedStatement.getId();
-				// 打印日志
-				String sqlLog = getSqlLog(sqlId, sql, result, slowQuery, startTime, endTime, cost);
+				boolean sqlLogFlag = getSqlLogFlag(sqlId);
+				
+				if (sqlLogFlag) {
+					String sqlLog = getSqlLog(sqlId, sql, result, slowQuery, startTime, endTime, cost);
+					int logLength = SqlLogInterceptor.logLength != 0 ? SqlLogInterceptor.logLength : ContextConstants.LOG_MAX_LENGTH;
 
-				if (sqlLog.length() > ContextConstants.LOG_MAX_LENGTH) {
-					sqlLog = sqlLog.substring(0, ContextConstants.LOG_MAX_LENGTH);
+					if (logLength != -1 && sqlLog.length() > logLength) {
+						sqlLog = sqlLog.substring(0, logLength);
+					}
+					
+					log.info(sqlLog);
 				}
-
-				log.info(sqlLog);
 			}
 
 			return obj;
 		} else {
 			Object obj = invocation.proceed();
 			return obj;
+		}
+	}
+
+	private boolean getSqlLogFlag(String sqlId) {
+		if (StringUtil.isBlank(ignorePattern)) {
+			return true;
+		}
+		
+		Pattern pattern = Pattern.compile(ignorePattern);
+		Matcher matcher = pattern.matcher(sqlId);
+		
+		if (matcher.matches()) {
+			return false;
+		} else {
+			return true;
 		}
 	}
 

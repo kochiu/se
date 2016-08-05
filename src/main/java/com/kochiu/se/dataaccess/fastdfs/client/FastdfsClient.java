@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.kochiu.se.common.exception.SystemException;
-import com.kochiu.se.common.util.FileUtil;
 import com.kochiu.se.dataaccess.fastdfs.config.FastdfsConfig;
 import com.kochiu.se.dataaccess.fastdfs.config.FileInfo;
 import org.csource.common.NameValuePair;
@@ -19,6 +18,8 @@ import org.csource.fastdfs.StorageServer;
 import org.csource.fastdfs.TrackerClient;
 import org.csource.fastdfs.TrackerGroup;
 import org.csource.fastdfs.TrackerServer;
+
+import com.kochiu.se.common.util.FileUtil;
 
 public class FastdfsClient {
 

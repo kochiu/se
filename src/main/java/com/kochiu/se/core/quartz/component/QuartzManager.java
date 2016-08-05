@@ -8,7 +8,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.kochiu.se.common.exception.SystemException;
 import com.kochiu.se.core.quartz.config.QuartzParameter;
+import com.kochiu.se.core.quartz.source.DynamicQuartz;
 import org.quartz.CronExpression;
 import org.quartz.JobDataMap;
 import org.quartz.JobDetail;
@@ -18,9 +20,6 @@ import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.TriggerKey;
 import org.quartz.impl.matchers.GroupMatcher;
-
-import com.kochiu.se.common.exception.SystemException;
-import com.kochiu.se.core.quartz.source.DynamicQuartz;
 
 /**
  * 
@@ -285,7 +284,8 @@ public class QuartzManager {
 	}
 
 	private Scheduler getScheduler(String schedName) {
-		return dynamicQuartz.getScheduler(null, schedName);
+		DynamicQuartz.QuartzSchedulerFactory quartzSchedulerFactory = dynamicQuartz.getQuartzSchedulerFactory(null, schedName);
+		return quartzSchedulerFactory.getScheduler();
 	}
 
 	private List<Scheduler> getAllSchedulers() {
